@@ -23,10 +23,7 @@ public class jdbcConnection {
             Class.forName("oracle.jdbc.driver.OracleDriver");
             Connection con= DriverManager.getConnection(url,uname,password)                                                                                                                                                                                                                                                                                                                                                 ;
             Statement stm = con.createStatement();
-            String query;
-            System.out.println("Enter the query");
-            Scanner s = new Scanner(System.in);
-            query = s.nextLine();
+            String query="select distinct b_category from b_cat";
             ResultSet result = stm.executeQuery(query);
             ResultSetMetaData rsmd = result.getMetaData();
             int columnCount = rsmd.getColumnCount();
