@@ -25,11 +25,13 @@ import org.json.simple.parser.ParseException;
  * @author Mayankkasturia
  */
 public class checkinFetch {
+
     public static void checkinTable() throws FileNotFoundException, IOException, SQLException, ClassNotFoundException, java.text.ParseException {
         ArrayList<JSONObject> json = new ArrayList<JSONObject>();
         String bidList = null;
         int in = 0;
-        String mint=":00";
+        //String in=null;
+        String mint = "00";
         String two;
         String[] split2;
         String day;
@@ -60,26 +62,49 @@ public class checkinFetch {
                     in = Integer.parseInt(split1[0]);
                     //in=split1[0];
                     two = split1[1];
-                    split2= two.split("=");
+                    split2 = two.split("=");
                     day = split2[0];
                     value = split2[1];
-                    weekDay=null;
-                
+                    weekDay = null;
+
 //                System.out.println(startDate);
-                    if(day.equalsIgnoreCase("0")){weekDay="Sunday";}
-                    if(day.equalsIgnoreCase("1")){weekDay="Monday";}
-                    if(day.equalsIgnoreCase("2")){weekDay="Tuesday";}
-                    if(day.equalsIgnoreCase("3")){weekDay="Wednesday";}
-                    if(day.equalsIgnoreCase("4")){weekDay="Thursday";}
-                    if(day.equalsIgnoreCase("5")){weekDay="Friday";}
-                    if(day.equalsIgnoreCase("6")){weekDay="Saturday";}
-                    //DateFormat df = new SimpleDateFormat("hh:mm");
-                    //Date startDate = df.parse(in);
-                    //System.out.println("Checkin @ "+startDate+" on "+weekDay+" value = "+value  );
-                    insertCheckinData.insertCheckinQuery(bidList,in,weekDay,value);
+                    if (day.equalsIgnoreCase("0")) {
+                        weekDay = "Sunday";
+                    }
+                    if (day.equalsIgnoreCase("1")) {
+                        weekDay = "Monday";
+                    }
+                    if (day.equalsIgnoreCase("2")) {
+                        weekDay = "Tuesday";
+                    }
+                    if (day.equalsIgnoreCase("3")) {
+                        weekDay = "Wednesday";
+                    }
+                    if (day.equalsIgnoreCase("4")) {
+                        weekDay = "Thursday";
+                    }
+                    if (day.equalsIgnoreCase("5")) {
+                        weekDay = "Friday";
+                    }
+                    if (day.equalsIgnoreCase("6")) {
+                        weekDay = "Saturday";
+                    }
+//                    SimpleDateFormat ft = new SimpleDateFormat ("E, HH:mm:ss"); 
+                    //String a= weekDay+", "+in+":"+mint+":"+mint;
+//                    //System.out.println(a);
+//                    Date date = ft.parse(a);
+//                    //System.out.println(date);
+                    //System.out.println(ft.format(date));
+//                    Date t=ft.format(null)
+//                    
+//                    
+//                    
+//                    //DateFormat df = new SimpleDateFormat("hh:mm");
+//                    //Date startDate = df.parse(in);
+//                    System.out.println("Checkin @ "+t+" on "+weekDay+" value = "+value  );
+                    insertCheckinData.insertCheckinQuery(bidList, in, weekDay, value);
                 }
-                
-                
+
             }
             // Always close files.
             bufferedReader.close();

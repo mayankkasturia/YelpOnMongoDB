@@ -1,5 +1,4 @@
 
-import DataLoading.jdbcConnection;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.event.KeyEvent;
@@ -9,23 +8,17 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Scanner;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.DefaultListModel;
 import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
 import javax.swing.JList;
-import javax.swing.JPanel;
 import javax.swing.JTextField;
 import javax.swing.ListCellRenderer;
-import javax.swing.ListModel;
 import javax.swing.ListSelectionModel;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
@@ -35,19 +28,22 @@ import javax.swing.event.DocumentListener;
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-
-
 /**
  *
  * @author Mayankkasturia
  */
 public class HW3 extends javax.swing.JFrame {
+
+    private static String url;
+    private static String uname;
+    private static String password;
+    public static Boolean label;
     private static Connection con = null;
     private static Statement stm = null;
     private static PreparedStatement preparedStatement = null;
+
     public static ArrayList<String> finalCat;
     public static ArrayList<String> finalCat1;
-    public static StringBuffer sBuffer;
     public static String fromCheckin;
     public static String fromCheckinHour;
     public static String toCheckin;
@@ -60,28 +56,40 @@ public class HW3 extends javax.swing.JFrame {
     public static String valueVote;
     public static String fromReview;
     public static String toReview;
+    public static String updatedQuery;
+
     /**
      * Creates new form dbGui
      */
-    public HW3() {
+    public HW3() throws SQLException {
         initComponents();
-        finalCat=new ArrayList<>(); 
-        finalCat1=new ArrayList<String>();
-        sBuffer = new StringBuffer("test");
-        fromCheckin=null;
-        fromCheckinHour=null;
-        toCheckin=null;
-        toCheckinHour=null;
-        operationCheckin=null;
-        valueCheckin=null;
-        operationStar=null;
-        operationVote=null;
-        valueStar=null;
-        valueVote=null;
-        fromReview=null;
-        toReview=null;
-        checkinValueTextField.getDocument().addDocumentListener(new DocumentListener(){
-            
+        url = "jdbc:oracle:thin:@localhost:1523:orcl123";
+        uname = "sys as sysdba";
+        password = "Mansimalik2402";
+
+        label = true;
+        finalCat = new ArrayList<>();
+        finalCat1 = new ArrayList<String>();
+//        query = new StringBuffer("SELECT DISTINCT I.NAME,I.CITY, I.STATE, I.STARS,C.B_CATEGORY,S.B_SUBCATEGORY \n"
+//                + "FROM B_INFO I,B_CAT C,B_SUBCAT S,B_CHECKIN CH,B_REVIEW R\n"
+//                + "WHERE I.B_ID=C.B_ID AND C.B_ID=S.B_ID AND S.B_ID=CH.B_ID AND CH.B_ID=R.B_ID\n"
+//                + "AND ");
+        fromCheckin = "";
+        fromCheckinHour = "";
+        toCheckin = "";
+        toCheckinHour = "";
+        operationCheckin = "";
+        valueCheckin = "";
+        operationStar = null;
+        operationVote = null;
+        valueStar = null;
+        valueVote = null;
+        fromReview = null;
+        toReview = null;
+        updatedQuery = null;
+        con = DriverManager.getConnection(url, uname, password);
+        checkinValueTextField.getDocument().addDocumentListener(new DocumentListener() {
+
             @Override
             public void insertUpdate(DocumentEvent e) {
                 text();
@@ -89,20 +97,21 @@ public class HW3 extends javax.swing.JFrame {
 
             @Override
             public void removeUpdate(DocumentEvent e) {
-                text();    
+                text();
             }
 
             @Override
             public void changedUpdate(DocumentEvent e) {
-               text();
+                text();
             }
-            public void text(){
-                valueCheckin= checkinValueTextField.getText();
+
+            public void text() {
+                valueCheckin = checkinValueTextField.getText();
                 //System.out.println(valueCheckin);
             }
-        
+
         });
-        starsValueTextField.getDocument().addDocumentListener(new DocumentListener(){
+        starsValueTextField.getDocument().addDocumentListener(new DocumentListener() {
 
             @Override
             public void insertUpdate(DocumentEvent e) {
@@ -111,21 +120,22 @@ public class HW3 extends javax.swing.JFrame {
 
             @Override
             public void removeUpdate(DocumentEvent e) {
-                text();    
+                text();
             }
 
             @Override
             public void changedUpdate(DocumentEvent e) {
-               text();
+                text();
             }
-            public void text(){
-                valueStar= starsValueTextField.getText();
+
+            public void text() {
+                valueStar = starsValueTextField.getText();
                 //System.out.println(valueStar);
             }
-        
+
         });
-        
-        votesValueTextField.getDocument().addDocumentListener(new DocumentListener(){
+
+        votesValueTextField.getDocument().addDocumentListener(new DocumentListener() {
 
             @Override
             public void insertUpdate(DocumentEvent e) {
@@ -134,22 +144,23 @@ public class HW3 extends javax.swing.JFrame {
 
             @Override
             public void removeUpdate(DocumentEvent e) {
-                text();    
+                text();
             }
 
             @Override
             public void changedUpdate(DocumentEvent e) {
-               text();
+                text();
             }
-            public void text(){
-                valueVote= votesValueTextField.getText();
+
+            public void text() {
+                valueVote = votesValueTextField.getText();
                 //System.out.println(valueVote);
             }
-        
+
         });
-        fromReview=((JTextField)fromReviewDate.getDateEditor().getUiComponent()).getText();
+        fromReview = ((JTextField) fromReviewDate.getDateEditor().getUiComponent()).getText();
         System.out.println(fromReview);
-        
+
     }
 
     /**
@@ -193,10 +204,8 @@ public class HW3 extends javax.swing.JFrame {
         votesValueTextField = new javax.swing.JTextField();
         fromReviewDate = new com.toedter.calendar.JDateChooser();
         toReviewDate = new com.toedter.calendar.JDateChooser();
-        queryTextField = new javax.swing.JTextField();
         jLabel5 = new javax.swing.JLabel();
         jLabel6 = new javax.swing.JLabel();
-        checkinLabel1 = new javax.swing.JLabel();
         checkinPanel1 = new javax.swing.JPanel();
         fromLabel1 = new javax.swing.JLabel();
         fromComboBox1 = new javax.swing.JComboBox();
@@ -207,7 +216,6 @@ public class HW3 extends javax.swing.JFrame {
         noCheckinLabel1 = new javax.swing.JLabel();
         checkinValueComboBox1 = new javax.swing.JComboBox();
         checkinValueTextField1 = new javax.swing.JTextField();
-        executeButton = new javax.swing.JButton();
         jScrollPane2 = new javax.swing.JScrollPane();
         categoryPanel = new javax.swing.JPanel();
         jScrollPane1 = new javax.swing.JScrollPane();
@@ -218,6 +226,11 @@ public class HW3 extends javax.swing.JFrame {
         jList2 = new javax.swing.JList();
         jScrollPane8 = new javax.swing.JScrollPane();
         resultTable = new javax.swing.JTable();
+        jPanel1 = new javax.swing.JPanel();
+        queryLabel = new javax.swing.JLabel();
+        jPanel2 = new javax.swing.JPanel();
+        jLabel2 = new javax.swing.JLabel();
+        executeQueryButton = new javax.swing.JButton();
 
         javax.swing.GroupLayout jFrame1Layout = new javax.swing.GroupLayout(jFrame1.getContentPane());
         jFrame1.getContentPane().setLayout(jFrame1Layout);
@@ -244,6 +257,7 @@ public class HW3 extends javax.swing.JFrame {
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
 
         dbCategory.setBackground(new java.awt.Color(204, 204, 255));
+        dbCategory.setMaximumSize(new java.awt.Dimension(1099, 1239));
 
         checkinLabel.setBackground(new java.awt.Color(255, 255, 255));
         checkinLabel.setFont(new java.awt.Font("Comic Sans MS", 0, 18)); // NOI18N
@@ -564,11 +578,6 @@ public class HW3 extends javax.swing.JFrame {
         jLabel6.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
         jLabel6.setText("Sql Query");
 
-        checkinLabel1.setBackground(new java.awt.Color(204, 255, 102));
-        checkinLabel1.setFont(new java.awt.Font("Comic Sans MS", 0, 18)); // NOI18N
-        checkinLabel1.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
-        checkinLabel1.setText("User");
-
         checkinPanel1.setBackground(new java.awt.Color(255, 255, 255));
         checkinPanel1.setAutoscrolls(true);
 
@@ -629,7 +638,7 @@ public class HW3 extends javax.swing.JFrame {
                     .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, checkinPanel1Layout.createSequentialGroup()
                         .addGroup(checkinPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
                             .addComponent(toComboBox1, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                            .addComponent(fromComboBox1, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                            .addComponent(fromComboBox1, 0, 396, Short.MAX_VALUE))
                         .addGap(18, 18, 18)
                         .addGroup(checkinPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
                             .addComponent(fromHourComboBox1, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
@@ -670,13 +679,6 @@ public class HW3 extends javax.swing.JFrame {
                 .addContainerGap(88, Short.MAX_VALUE))
         );
 
-        executeButton.setText("Execute Query");
-        executeButton.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                executeButtonActionPerformed(evt);
-            }
-        });
-
         categoryPanel.setBackground(new java.awt.Color(255, 255, 255));
 
         DefaultListModel<String> listModel = new DefaultListModel<String>();
@@ -687,11 +689,11 @@ public class HW3 extends javax.swing.JFrame {
         categoryPanel.setLayout(categoryPanelLayout);
         categoryPanelLayout.setHorizontalGroup(
             categoryPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 243, Short.MAX_VALUE)
+            .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 245, Short.MAX_VALUE)
         );
         categoryPanelLayout.setVerticalGroup(
             categoryPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 315, Short.MAX_VALUE)
+            .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 326, Short.MAX_VALUE)
         );
 
         jScrollPane2.setViewportView(categoryPanel);
@@ -706,11 +708,11 @@ public class HW3 extends javax.swing.JFrame {
         subCategoryPanel.setLayout(subCategoryPanelLayout);
         subCategoryPanelLayout.setHorizontalGroup(
             subCategoryPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(jScrollPane3, javax.swing.GroupLayout.DEFAULT_SIZE, 283, Short.MAX_VALUE)
+            .addComponent(jScrollPane3, javax.swing.GroupLayout.DEFAULT_SIZE, 285, Short.MAX_VALUE)
         );
         subCategoryPanelLayout.setVerticalGroup(
             subCategoryPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(jScrollPane3, javax.swing.GroupLayout.DEFAULT_SIZE, 315, Short.MAX_VALUE)
+            .addComponent(jScrollPane3, javax.swing.GroupLayout.DEFAULT_SIZE, 326, Short.MAX_VALUE)
         );
 
         jScrollPane5.setViewportView(subCategoryPanel);
@@ -728,6 +730,51 @@ public class HW3 extends javax.swing.JFrame {
         ));
         jScrollPane8.setViewportView(resultTable);
 
+        jPanel1.setBackground(new java.awt.Color(255, 255, 255));
+
+        queryLabel.setBackground(new java.awt.Color(255, 255, 255));
+        queryLabel.setFont(new java.awt.Font("Comic Sans MS", 0, 18)); // NOI18N
+        queryLabel.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        queryLabel.setLabelFor(executeQueryButton);
+        queryLabel.setText("mk");
+        queryLabel.setVerticalAlignment(javax.swing.SwingConstants.TOP);
+
+        javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
+        jPanel1.setLayout(jPanel1Layout);
+        jPanel1Layout.setHorizontalGroup(
+            jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addComponent(queryLabel, javax.swing.GroupLayout.DEFAULT_SIZE, 531, Short.MAX_VALUE)
+        );
+        jPanel1Layout.setVerticalGroup(
+            jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addComponent(queryLabel, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, 223, Short.MAX_VALUE)
+        );
+
+        jPanel2.setBackground(new java.awt.Color(255, 255, 153));
+
+        jLabel2.setBackground(new java.awt.Color(255, 255, 255));
+        jLabel2.setFont(new java.awt.Font("Comic Sans MS", 0, 18)); // NOI18N
+        jLabel2.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        jLabel2.setText("User");
+
+        javax.swing.GroupLayout jPanel2Layout = new javax.swing.GroupLayout(jPanel2);
+        jPanel2.setLayout(jPanel2Layout);
+        jPanel2Layout.setHorizontalGroup(
+            jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addComponent(jLabel2, javax.swing.GroupLayout.DEFAULT_SIZE, 539, Short.MAX_VALUE)
+        );
+        jPanel2Layout.setVerticalGroup(
+            jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addComponent(jLabel2, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+        );
+
+        executeQueryButton.setText("Execute Query");
+        executeQueryButton.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                executeQueryButtonActionPerformed(evt);
+            }
+        });
+
         javax.swing.GroupLayout dbCategoryLayout = new javax.swing.GroupLayout(dbCategory);
         dbCategory.setLayout(dbCategoryLayout);
         dbCategoryLayout.setHorizontalGroup(
@@ -737,23 +784,22 @@ public class HW3 extends javax.swing.JFrame {
                 .addGroup(dbCategoryLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(dbCategoryLayout.createSequentialGroup()
                         .addGroup(dbCategoryLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addGroup(dbCategoryLayout.createSequentialGroup()
-                                .addGroup(dbCategoryLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                    .addComponent(categoryLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 245, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                    .addComponent(jScrollPane2))
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                .addGroup(dbCategoryLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                    .addComponent(subCategoryLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 285, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                    .addComponent(jScrollPane5)))
-                            .addComponent(jLabel6, javax.swing.GroupLayout.PREFERRED_SIZE, 504, javax.swing.GroupLayout.PREFERRED_SIZE))
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, dbCategoryLayout.createSequentialGroup()
-                        .addGroup(dbCategoryLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
-                            .addComponent(queryTextField, javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(checkinPanel1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                            .addComponent(checkinLabel1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                            .addComponent(executeButton, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-                        .addGap(15, 15, 15)))
+                            .addComponent(categoryLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 245, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(jScrollPane2))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addGroup(dbCategoryLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(subCategoryLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 285, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(jScrollPane5))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED, 19, Short.MAX_VALUE))
+                    .addGroup(dbCategoryLayout.createSequentialGroup()
+                        .addGroup(dbCategoryLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(jPanel2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addGroup(dbCategoryLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
+                                .addComponent(jLabel6, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                .addComponent(jPanel1, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addComponent(checkinPanel1, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                            .addComponent(executeQueryButton, javax.swing.GroupLayout.PREFERRED_SIZE, 531, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))
                 .addGroup(dbCategoryLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addComponent(jLabel5, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addGroup(dbCategoryLayout.createSequentialGroup()
@@ -767,7 +813,7 @@ public class HW3 extends javax.swing.JFrame {
                                 .addComponent(reviewPanel, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                             .addGroup(dbCategoryLayout.createSequentialGroup()
                                 .addComponent(jLabel4, javax.swing.GroupLayout.PREFERRED_SIZE, 237, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addGap(0, 0, Short.MAX_VALUE))))
+                                .addGap(0, 12, Short.MAX_VALUE))))
                     .addComponent(jScrollPane8))
                 .addContainerGap())
         );
@@ -794,18 +840,19 @@ public class HW3 extends javax.swing.JFrame {
                         .addComponent(jScrollPane5)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)))
                 .addGroup(dbCategoryLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                    .addComponent(checkinLabel1, javax.swing.GroupLayout.DEFAULT_SIZE, 40, Short.MAX_VALUE)
-                    .addComponent(jLabel5, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-                .addGap(12, 12, 12)
+                    .addComponent(jLabel5, javax.swing.GroupLayout.DEFAULT_SIZE, 52, Short.MAX_VALUE)
+                    .addComponent(jPanel2, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(dbCategoryLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(dbCategoryLayout.createSequentialGroup()
                         .addComponent(checkinPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(jLabel6, javax.swing.GroupLayout.PREFERRED_SIZE, 53, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(queryTextField, javax.swing.GroupLayout.PREFERRED_SIZE, 214, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addGap(18, 18, 18)
-                        .addComponent(executeButton, javax.swing.GroupLayout.PREFERRED_SIZE, 59, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(executeQueryButton, javax.swing.GroupLayout.PREFERRED_SIZE, 49, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addGap(0, 51, Short.MAX_VALUE))
                     .addComponent(jScrollPane8))
                 .addContainerGap())
         );
@@ -816,24 +863,18 @@ public class HW3 extends javax.swing.JFrame {
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(layout.createSequentialGroup()
-                .addContainerGap()
-                .addComponent(jScrollPane6, javax.swing.GroupLayout.DEFAULT_SIZE, 1099, Short.MAX_VALUE)
-                .addContainerGap())
+            .addComponent(jScrollPane6)
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(layout.createSequentialGroup()
-                .addContainerGap()
-                .addComponent(jScrollPane6, javax.swing.GroupLayout.DEFAULT_SIZE, 1169, Short.MAX_VALUE)
-                .addContainerGap())
+            .addComponent(jScrollPane6, javax.swing.GroupLayout.DEFAULT_SIZE, 1201, Short.MAX_VALUE)
         );
 
         pack();
     }// </editor-fold>//GEN-END:initComponents
 
     private void checkinValueTextFieldActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_checkinValueTextFieldActionPerformed
-      
+
     }//GEN-LAST:event_checkinValueTextFieldActionPerformed
 
     private void starsValueTextFieldActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_starsValueTextFieldActionPerformed
@@ -845,11 +886,14 @@ public class HW3 extends javax.swing.JFrame {
     }//GEN-LAST:event_votesValueTextFieldActionPerformed
 
     private void toComboBoxActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_toComboBoxActionPerformed
-        JComboBox cb=(JComboBox)evt.getSource();
-                 String a= (String)cb.getSelectedItem();
-                 if(a=="Day") toCheckin=null;
-                 else toCheckin=a;
-                 //System.out.println("Hour checkin :"+toCheckin);
+        JComboBox cb = (JComboBox) evt.getSource();
+        String a = (String) cb.getSelectedItem();
+        if (a == "Day") {
+            toCheckin = null;
+        } else {
+            toCheckin = a;
+        }
+        //System.out.println("Hour checkin :"+toCheckin);
     }//GEN-LAST:event_toComboBoxActionPerformed
 
     private void toComboBox1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_toComboBox1ActionPerformed
@@ -860,111 +904,257 @@ public class HW3 extends javax.swing.JFrame {
         // TODO add your handling code here:
     }//GEN-LAST:event_checkinValueTextField1ActionPerformed
 
-    private void executeButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_executeButtonActionPerformed
-        // TODO add your handling code here:
-    }//GEN-LAST:event_executeButtonActionPerformed
-
     private void fromComboBoxMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_fromComboBoxMouseClicked
         // TODO add your handling code here:
     }//GEN-LAST:event_fromComboBoxMouseClicked
 
     private void fromHourComboBoxActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_fromHourComboBoxActionPerformed
-            JComboBox cb=(JComboBox)evt.getSource();
-                 String a= (String)cb.getSelectedItem();
-                 if(a=="Time") fromCheckinHour=null;
-                 else fromCheckinHour=a;
-                 //System.out.println("Hour checkin :"+fromCheckinHour);
+        JComboBox cb = (JComboBox) evt.getSource();
+        String a = (String) cb.getSelectedItem();
+        if (a == "Time") {
+            fromCheckinHour = null;
+        } else {
+            fromCheckinHour = a;
+        }
+        //System.out.println("Hour checkin :"+fromCheckinHour);
     }//GEN-LAST:event_fromHourComboBoxActionPerformed
 
     private void fromComboBoxActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_fromComboBoxActionPerformed
-        JComboBox cb=(JComboBox)evt.getSource();
-        String a= (String)cb.getSelectedItem();
-        if(a=="Day")fromCheckin=null;
-        else fromCheckin=a;
-       // System.out.println("From checkin :"+fromCheckin);
+        JComboBox cb = (JComboBox) evt.getSource();
+        String a = (String) cb.getSelectedItem();
+        if (a == "Day") {
+            fromCheckin = "";
+        } else {
+            fromCheckin = a;
+        }
+        // System.out.println("From checkin :"+fromCheckin);
     }//GEN-LAST:event_fromComboBoxActionPerformed
 
     private void toHourComboBoxActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_toHourComboBoxActionPerformed
-        JComboBox cb=(JComboBox)evt.getSource();
-                 String a= (String)cb.getSelectedItem();
-                 if(a=="Time") toCheckinHour=null;
-                 else toCheckinHour=a;
-                 //System.out.println("Hour checkin :"+toCheckinHour);
+        JComboBox cb = (JComboBox) evt.getSource();
+        String a = (String) cb.getSelectedItem();
+        if (a == "Time") {
+            toCheckinHour = null;
+        } else {
+            toCheckinHour = a;
+        }
+        //System.out.println("Hour checkin :"+toCheckinHour);
     }//GEN-LAST:event_toHourComboBoxActionPerformed
 
     private void checkinValueComboBoxActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_checkinValueComboBoxActionPerformed
-        JComboBox cb=(JComboBox)evt.getSource();
-                 String a= (String)cb.getSelectedItem();
-                 if(a=="Select =,>,<") operationCheckin=null;
-                 else operationCheckin=a;
-                 //System.out.println("Hour checkin :"+operationCheckin);
+        JComboBox cb = (JComboBox) evt.getSource();
+        String a = (String) cb.getSelectedItem();
+        if (a == "Select =,>,<") {
+            operationCheckin = null;
+        } else {
+            operationCheckin = a;
+        }
+        //System.out.println("Hour checkin :"+operationCheckin);
     }//GEN-LAST:event_checkinValueComboBoxActionPerformed
 
     private void checkinValueTextFieldKeyTyped(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_checkinValueTextFieldKeyTyped
-        char c=evt.getKeyChar();
-        if(!(Character.isDigit(c)|| (c==KeyEvent.VK_BACK_SPACE)|| (c==KeyEvent.VK_DELETE))){
-        getToolkit().beep();
-        evt.consume();
-        
+        char c = evt.getKeyChar();
+        if (!(Character.isDigit(c) || (c == KeyEvent.VK_BACK_SPACE) || (c == KeyEvent.VK_DELETE))) {
+            getToolkit().beep();
+            evt.consume();
+
         }
     }//GEN-LAST:event_checkinValueTextFieldKeyTyped
 
     private void starsComboBoxActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_starsComboBoxActionPerformed
-        JComboBox cb=(JComboBox)evt.getSource();
-                 String a= (String)cb.getSelectedItem();
-                 if(a=="Select =,>,<") operationStar=null;
-                 else operationStar=a;
-                 //System.out.println("Hour checkin :"+operationStar);
+        JComboBox cb = (JComboBox) evt.getSource();
+        String a = (String) cb.getSelectedItem();
+        if (a == "Select =,>,<") {
+            operationStar = null;
+        } else {
+            operationStar = a;
+        }
+        //System.out.println("Hour checkin :"+operationStar);
     }//GEN-LAST:event_starsComboBoxActionPerformed
 
     private void votesComboBoxActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_votesComboBoxActionPerformed
-        JComboBox cb=(JComboBox)evt.getSource();
-                 String a= (String)cb.getSelectedItem();
-                 if(a=="Select =,>,<") operationVote=null;
-                 else operationVote=a;
-                 //System.out.println("Hour checkin :"+operationVote);
+        JComboBox cb = (JComboBox) evt.getSource();
+        String a = (String) cb.getSelectedItem();
+        if (a == "Select =,>,<") {
+            operationVote = null;
+        } else {
+            operationVote = a;
+        }
+        //System.out.println("Hour checkin :"+operationVote);
     }//GEN-LAST:event_votesComboBoxActionPerformed
 
     private void starsValueTextFieldKeyTyped(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_starsValueTextFieldKeyTyped
-        char c=evt.getKeyChar();
-        if(!(Character.isDigit(c)|| (c==KeyEvent.VK_BACK_SPACE)|| (c==KeyEvent.VK_DELETE))){
-        getToolkit().beep();
-        evt.consume();
-        
+        char c = evt.getKeyChar();
+        if (!(Character.isDigit(c) || (c == KeyEvent.VK_BACK_SPACE) || (c == KeyEvent.VK_DELETE))) {
+            getToolkit().beep();
+            evt.consume();
+
         }
     }//GEN-LAST:event_starsValueTextFieldKeyTyped
 
     private void votesValueTextFieldKeyTyped(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_votesValueTextFieldKeyTyped
-       char c=evt.getKeyChar();
-        if(!(Character.isDigit(c)|| (c==KeyEvent.VK_BACK_SPACE)|| (c==KeyEvent.VK_DELETE))){
-        getToolkit().beep();
-        evt.consume();
-        
+        char c = evt.getKeyChar();
+        if (!(Character.isDigit(c) || (c == KeyEvent.VK_BACK_SPACE) || (c == KeyEvent.VK_DELETE))) {
+            getToolkit().beep();
+            evt.consume();
+
         }
     }//GEN-LAST:event_votesValueTextFieldKeyTyped
 
     private void fromReviewDateMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_fromReviewDateMouseClicked
-        
+
     }//GEN-LAST:event_fromReviewDateMouseClicked
 
     private void fromReviewDatePropertyChange(java.beans.PropertyChangeEvent evt) {//GEN-FIRST:event_fromReviewDatePropertyChange
         //System.out.println(evt.getNewValue().toString());
-                fromReview=((JTextField)fromReviewDate.getDateEditor().getUiComponent()).getText();
+        fromReview = ((JTextField) fromReviewDate.getDateEditor().getUiComponent()).getText();
         System.out.println(fromReview);
     }//GEN-LAST:event_fromReviewDatePropertyChange
 
     private void toReviewDatePropertyChange(java.beans.PropertyChangeEvent evt) {//GEN-FIRST:event_toReviewDatePropertyChange
-        toReview=((JTextField)toReviewDate.getDateEditor().getUiComponent()).getText();
+        toReview = ((JTextField) toReviewDate.getDateEditor().getUiComponent()).getText();
         System.out.println(toReview);
     }//GEN-LAST:event_toReviewDatePropertyChange
-    
-                 
-    
-    
+
+    private void executeQueryButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_executeQueryButtonActionPerformed
+        try {
+            Class.forName("oracle.jdbc.driver.OracleDriver");
+        } catch (ClassNotFoundException ex) {
+            Logger.getLogger(HW3.class.getName()).log(Level.SEVERE, null, ex);
+        }
+
+        //nothing is selected
+        if (finalCat.isEmpty()) {
+            queryLabel.setText("Please select atleast one category from business");
+        } 
+        
+        //only cat selected
+        else if (finalCat.size() > 0 && finalCat1.isEmpty()) {
+            String query = "SELECT DISTINCT I.NAME,I.CITY, I.STATE, I.STARS,C.B_CATEGORY \n"
+                    + "FROM B_INFO I,B_CAT C\n"
+                    + "WHERE I.B_ID=C.B_ID \n"
+                    + "AND C.B_CATEGORY= ?";
+            ResultSet resultSet;
+            for (String t : finalCat) {
+                try {
+                    preparedStatement = con.prepareStatement(query);
+                    preparedStatement.setString(1, t);
+                    resultSet = preparedStatement.executeQuery();
+                    //queryLabel.setText(query.toString());
+                    while (resultSet.next()) {
+                        for (int i = 1; i <= 5; i++) {
+                            System.out.print(resultSet.getString(i) + "\t\t");
+                            if (i == 5) {
+                                System.out.println();
+                            }
+                        }
+                        //String cat = resultSet.getString(1);
+
+                    }
+                } catch (SQLException ex) {
+                    Logger.getLogger(HW3.class.getName()).log(Level.SEVERE, null, ex);
+                }
+            }}
+        
+        
+        //cat and subCat is selected
+        else if (finalCat.size() > 0 && finalCat1.size() > 0 ) {
+           
+            if(!fromCheckin.isEmpty() && !fromCheckinHour.isEmpty() && !toCheckin.isEmpty() && !toCheckinHour.isEmpty()
+                && !operationCheckin.isEmpty() && !valueCheckin.isEmpty()){
+                System.out.println(fromCheckin);
+                System.out.println(fromCheckinHour);
+                System.out.println(toCheckin);
+                System.out.println(toCheckinHour);
+                System.out.println(operationCheckin);
+                System.out.println(valueCheckin);
+                
+                
+           for (String t : finalCat) {
+                for (String s : finalCat1) {
+            System.out.println("I am in checkin box");
+            CheckForDay(fromCheckin,toCheckin);
+            
+            String query = "SELECT DISTINCT C.B_ID,I.name,I.CITY, I.STATE, I.STARS,C.B_CATEGORY,S.B_SUBCATEGORY \n"
+                    + "from b_info I,b_cat C,b_subcat S\n"
+                    + "where I.B_ID=C.B_ID and C.B_ID=S.B_ID and C.B_CATEGORY= ? and S.B_SUBCATEGORY= ? and C.B_ID in (  \n"
+                    + "SELECT b_id FROM B_CHECKIN CH WHERE \n"
+                    + "((CH.CHECKIN_DAY=? and TO_CHAR(CH.CHECKIN_TIME,'hh24.mi.ss') >= ?) or CH.CHECKIN_DAY='Monday'\n"
+                    + "or CH.CHECKIN_DAY='Tuesday' or (CH.CHECKIN_DAY=? and TO_CHAR(CH.CHECKIN_TIME,'hh24.mi.ss') <= ?))\n"
+                    + "group by b_id having sum(NUMBER_CHECKIN)"+operationCheckin+" ?)";
+            try (PreparedStatement preparedStatement = con.prepareStatement(query)) {
+                preparedStatement.setString(1, t);
+                preparedStatement.setString(2, s);
+                preparedStatement.setString(3, fromCheckin);
+                preparedStatement.setString(4, fromCheckinHour);
+                preparedStatement.setString(5, toCheckin);
+                preparedStatement.setString(6, toCheckinHour);            
+                preparedStatement.setString(7, valueCheckin);
+               
+                try (ResultSet resultSet = preparedStatement.executeQuery()) {
+                    //queryLabel.setText(query.toString());
+                    while (resultSet.next()) {
+                        for (int i = 1; i <= 6; i++) {
+                            System.out.print(resultSet.getString(i) + "\t\t");
+                            if (i == 6) {
+                                System.out.println();
+                            }
+                        }
+                        //String cat = resultSet.getString(1);
+
+                    }
+                }
+                
+            } catch (SQLException ex) {
+                Logger.getLogger(HW3.class.getName()).log(Level.SEVERE, null, ex);
+            }
+                }}//for cat n subcat
+           
+           
+           
+           
+           
+           }//if
+            
+            else{
+            
+            String query = "SELECT DISTINCT I.NAME,I.CITY, I.STATE, I.STARS,C.B_CATEGORY,S.B_SUBCATEGORY \n"
+                    + "FROM B_INFO I,B_CAT C,B_SUBCAT S\n"
+                    + "WHERE I.B_ID=C.B_ID AND C.B_ID=S.B_ID \n"
+                    + "AND C.B_CATEGORY= ? AND S.B_SUBCATEGORY= ?";
+
+            //System.out.println(query.toString());
+            for (String t : finalCat) {
+                for (String s : finalCat1) {
+                    try (PreparedStatement preparedStatement = con.prepareStatement(query)) {
+                        preparedStatement.setString(1, t);
+                        preparedStatement.setString(2, s);
+                        try (ResultSet resultSet = preparedStatement.executeQuery()) {
+                            //queryLabel.setText(query.toString());
+                            while (resultSet.next()) {
+                                for (int i = 1; i <= 6; i++) {
+                                    System.out.print(resultSet.getString(i) + "\t\t");
+                                    if (i == 6) {
+                                        System.out.println();
+                                    }
+                                }
+                                //String cat = resultSet.getString(1);
+                            }
+                        }
+                    } catch (SQLException ex) {
+                        Logger.getLogger(HW3.class.getName()).log(Level.SEVERE, null, ex);
+                    }
+                }// for subcat
+            }//for cat
+        }
+        } // end sub cat
+        
+        
+    }//GEN-LAST:event_executeQueryButtonActionPerformed
+
     /**
      * @param args the command line arguments
      */
-    
     public static void main(String args[]) {
         /* Set the Nimbus look and feel */
         //<editor-fold defaultstate="collapsed" desc=" Look and feel setting code (optional) ">
@@ -992,14 +1182,15 @@ public class HW3 extends javax.swing.JFrame {
         /* Create and display the form */
         java.awt.EventQueue.invokeLater(new Runnable() {
             public void run() {
-                HW3 jFrame = new HW3();
-            jFrame.setVisible(true);
+                HW3 jFrame;
+
                 try {
-                    
+                    jFrame = new HW3();
+                    jFrame.setVisible(true);
                     jFrame.connect();
                     jFrame.pack();
                     jFrame.setVisible(true);
-                
+
                 } catch (ClassNotFoundException | SQLException ex) {
                     Logger.getLogger(HW3.class.getName()).log(Level.SEVERE, null, ex);
                 }
@@ -1011,7 +1202,6 @@ public class HW3 extends javax.swing.JFrame {
     private javax.swing.JLabel categoryLabel;
     private javax.swing.JPanel categoryPanel;
     private javax.swing.JLabel checkinLabel;
-    private javax.swing.JLabel checkinLabel1;
     private javax.swing.JPanel checkinPanel;
     private javax.swing.JPanel checkinPanel1;
     private javax.swing.JComboBox checkinValueComboBox;
@@ -1019,7 +1209,7 @@ public class HW3 extends javax.swing.JFrame {
     private javax.swing.JTextField checkinValueTextField;
     private javax.swing.JTextField checkinValueTextField1;
     private javax.swing.JPanel dbCategory;
-    private javax.swing.JButton executeButton;
+    private javax.swing.JButton executeQueryButton;
     private javax.swing.JComboBox fromComboBox;
     private javax.swing.JComboBox fromComboBox1;
     private javax.swing.JComboBox fromHourComboBox;
@@ -1030,11 +1220,14 @@ public class HW3 extends javax.swing.JFrame {
     private javax.swing.JLabel fromReviewLabel;
     private javax.swing.JFrame jFrame1;
     private javax.swing.JFrame jFrame2;
+    private javax.swing.JLabel jLabel2;
     private javax.swing.JLabel jLabel4;
     private javax.swing.JLabel jLabel5;
     private javax.swing.JLabel jLabel6;
     private javax.swing.JList jList1;
     private javax.swing.JList jList2;
+    private javax.swing.JPanel jPanel1;
+    private javax.swing.JPanel jPanel2;
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JScrollPane jScrollPane2;
     private javax.swing.JScrollPane jScrollPane3;
@@ -1044,7 +1237,7 @@ public class HW3 extends javax.swing.JFrame {
     private javax.swing.JTabbedPane jTabbedPane1;
     private javax.swing.JLabel noCheckinLabel;
     private javax.swing.JLabel noCheckinLabel1;
-    private javax.swing.JTextField queryTextField;
+    private javax.swing.JLabel queryLabel;
     private javax.swing.JTable resultTable;
     private javax.swing.JPanel reviewPanel;
     private javax.swing.JLabel starValueLabel;
@@ -1068,11 +1261,10 @@ public class HW3 extends javax.swing.JFrame {
     // End of variables declaration//GEN-END:variables
 
     private void connect() throws ClassNotFoundException, SQLException {
-        String url = "jdbc:oracle:thin:@localhost:1523:orcl123";
-        String uname = "sys as sysdba";
-        String password = "Mansimalik2402";
+//        String url = "jdbc:oracle:thin:@localhost:1523:orcl123";
+//        String uname = "sys as sysdba";
+//        String password = "Mansimalik2402";
         Class.forName("oracle.jdbc.driver.OracleDriver");
-        con = DriverManager.getConnection(url, uname, password);
         stm = con.createStatement();
         ResultSet result = stm.executeQuery("select distinct b_category from b_cat");
         jList1.setCellRenderer(new CheckboxListRenderer());
@@ -1081,19 +1273,18 @@ public class HW3 extends javax.swing.JFrame {
             public void mouseClicked(MouseEvent event) {
                 JList<CheckboxListItem> list
                         = (JList<CheckboxListItem>) event.getSource();
-            // Get index of item clicked
+                // Get index of item clicked
                 int index = list.locationToIndex(event.getPoint());
                 CheckboxListItem item = (CheckboxListItem) list.getModel()
-                        .getElementAt(index); 
-            // Toggle selected state
+                        .getElementAt(index);
+                // Toggle selected state
                 item.setSelected(!item.isSelected());
-              
-                
-                DefaultListModel<CheckboxListItem> model1 = (DefaultListModel) jList2.getModel(); 
-                
-                 if(item.isSelected()){
-                     model1.clear();
-                     finalCat1.clear();
+
+                DefaultListModel<CheckboxListItem> model1 = (DefaultListModel) jList2.getModel();
+
+                if (item.isSelected()) {
+                    model1.clear();
+                    finalCat1.clear();
                     finalCat.add(item.toString());
                     try {
                         subCat(finalCat, model1);
@@ -1105,10 +1296,10 @@ public class HW3 extends javax.swing.JFrame {
 //                for(String t:finalCat){
 //                System.out.println(t);
 //                }
-                }
-                else{model1.clear();
-                finalCat1.clear();
-                finalCat.remove(item.toString());
+                } else {
+                    model1.clear();
+                    finalCat1.clear();
+                    finalCat.remove(item.toString());
                     try {
                         subCat(finalCat, model1);
                     } catch (ClassNotFoundException ex) {
@@ -1116,11 +1307,11 @@ public class HW3 extends javax.swing.JFrame {
                     } catch (SQLException ex) {
                         Logger.getLogger(HW3.class.getName()).log(Level.SEVERE, null, ex);
                     }
-             
+
                 }
-                 //System.out.println("Size of arraylist : "+finalCat.size());
-            // Repaint cell
-               
+                //System.out.println("Size of arraylist : "+finalCat.size());
+                // Repaint cell
+
                 list.repaint(list.getCellBounds(index, index));
             }
         });
@@ -1131,48 +1322,60 @@ public class HW3 extends javax.swing.JFrame {
             model.addElement(cbl);
         }
     }
+
     private void subCat(ArrayList<String> finalCat, DefaultListModel<CheckboxListItem> model) throws ClassNotFoundException, SQLException {
-        for(String t:finalCat){
-                //System.out.println(t);
-        ResultSet subResult = stm.executeQuery("select distinct b_subcategory from b_subcat where b_category='"+t+"'");
-        jList2.setCellRenderer(new CheckboxListRenderer());
-        jList2.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
-        jList2.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseClicked(MouseEvent event) {
-                JList<CheckboxListItem> list2
-                        = (JList<CheckboxListItem>) event.getSource();
-            // Get index of item clicked
-                int index = list2.locationToIndex(event.getPoint());
-                CheckboxListItem item = (CheckboxListItem) list2.getModel()
-                        .getElementAt(index); 
-            // Toggle selected state
-                item.setSelected(!item.isSelected());
-                if(item.isSelected()){
-                //System.out.println(item.toString());
-                finalCat1.add(item.toString());
-                }
-                else{
-                finalCat1.remove(item.toString());
-                //System.out.println("Size of arraylist off click : "+finalCat1.size());
-                }
-               System.out.println("Size of arraylist : "+finalCat1.size());
-            // Repaint cell
-                list2.repaint(list2.getCellBounds(index, index));
-                    
-            }//mouse event
-        });//mouse adapter
-        while (subResult.next()) {
-            String subCat = subResult.getString(1);
-            CheckboxListItem cb2 = new CheckboxListItem(subCat);
-            model.addElement(cb2);
-          
-        }//while
-    }//for
+        for (String t : finalCat) {
+            //System.out.println(t);
+            ResultSet subResult = stm.executeQuery("select distinct b_subcategory from b_subcat where b_category='" + t + "'");
+            jList2.setCellRenderer(new CheckboxListRenderer());
+            jList2.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
+            jList2.addMouseListener(new MouseAdapter() {
+                @Override
+                public void mouseClicked(MouseEvent event) {
+                    JList<CheckboxListItem> list2
+                            = (JList<CheckboxListItem>) event.getSource();
+                    // Get index of item clicked
+                    int index = list2.locationToIndex(event.getPoint());
+                    CheckboxListItem item = (CheckboxListItem) list2.getModel()
+                            .getElementAt(index);
+                    // Toggle selected state
+                    item.setSelected(!item.isSelected());
+                    if (item.isSelected()) {
+                        //System.out.println(item.toString());
+                        finalCat1.add(item.toString());
+                    } else {
+                        finalCat1.remove(item.toString());
+                        //System.out.println("Size of arraylist off click : "+finalCat1.size());
+                    }
+                    //System.out.println("Size of arraylist : " + finalCat1.size());
+                    // Repaint cell
+                    list2.repaint(list2.getCellBounds(index, index));
+
+                }//mouse event
+            });//mouse adapter
+            while (subResult.next()) {
+                String subCat = subResult.getString(1);
+                CheckboxListItem cb2 = new CheckboxListItem(subCat);
+                model.addElement(cb2);
+
+            }//while
+        }//for
+
+    }//subcat method
+    private void CheckForDay(String from, String to){
+    int value1;
+    int value2;
+    if("Sunday".equals(from)){value1=0;}
+    if("Monday".equals(from)){value1=1;}
+    if("Tuesday".equals(from)){value1=2;}
+    if("Wednesday".equals(from)){value1=3;}
+    if("Thursday".equals(from)){value1=4;}
+    if("Friday".equals(from)){value1=5;}
+    if("Saturday".equals(from)){value1=6;}
     
-}//subcat method
-
-
+    
+    
+    }//checkForDay
 
 }//class hw3
 

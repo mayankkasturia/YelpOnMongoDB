@@ -22,24 +22,26 @@ import oracle.jdbc.OraclePreparedStatement;
  * @author Mayankkasturia
  */
 public class insertCheckinData {
-    public static void insertCheckinQuery(String bidList,int in,String weekDay,String value) throws SQLException, IOException {
+
+    public static void insertCheckinQuery(String bidList, int in, String weekDay, String value) throws SQLException, IOException {
         //System.out.println(bidList+" Checkin @ "+in+" on "+weekDay+" value = "+value  );
-        String url="jdbc:oracle:thin:@localhost:1523:orcl123";
-        String uname="sys as sysdba";
-        String password="Mansimalik2402";
+        String url = "jdbc:oracle:thin:@localhost:1523:orcl123";
+        String uname = "sys as sysdba";
+        String password = "Mansimalik2402";
         try {
             Class.forName("oracle.jdbc.driver.OracleDriver");
-            try (Connection con = DriverManager.getConnection(url,uname,password)) {
-                String b_id= bidList;
+            try (Connection con = DriverManager.getConnection(url, uname, password)) {
+                String b_id = bidList;
                 //Date checkintime=in;
-                //String checkin=in;
+                // String checkin=in.toString();
                 //Timestamp checkin = Timestamp.valueOf(in);
-                String day= weekDay;
-                String number_checkin= value;
-                java.sql.Timestamp sqltime = new java.sql.Timestamp(0,0,0,in,0,0,0);
-                String query ="insert into B_CHECKIN values(?,?,?,?)";
+                String day = weekDay;
+                String number_checkin = value;
+                java.sql.Timestamp sqltime = new java.sql.Timestamp(0, 0, 0, in, 0, 0, 0);
+                //java.sql.Date sqltime = new java.sql.Date(in);
+                String query = "insert into CK values(?,?,?.?)";
                 try (PreparedStatement stm = con.prepareStatement(query)) {
-                    ((OraclePreparedStatement)stm).setExecuteBatch (30000);
+                    ((OraclePreparedStatement) stm).setExecuteBatch(30000);
                     stm.setString(1, b_id);
                     stm.setTimestamp(2, sqltime);
                     //stm.setInt(3, checkouttime);
@@ -49,10 +51,9 @@ public class insertCheckinData {
                 }
             }
 
-            
-            }catch (ClassNotFoundException ex) {
+        } catch (ClassNotFoundException ex) {
             Logger.getLogger(jdbcConnection.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
-    
+
 }
