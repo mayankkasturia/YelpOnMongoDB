@@ -11,6 +11,9 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Set;
+import java.util.Vector;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.DefaultListModel;
@@ -22,6 +25,7 @@ import javax.swing.ListCellRenderer;
 import javax.swing.ListSelectionModel;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
+import javax.swing.table.DefaultTableModel;
 
 /*
  * To change this license header, choose License Headers in Project Properties.
@@ -70,10 +74,6 @@ public class HW3 extends javax.swing.JFrame {
         label = true;
         finalCat = new ArrayList<>();
         finalCat1 = new ArrayList<String>();
-//        query = new StringBuffer("SELECT DISTINCT I.NAME,I.CITY, I.STATE, I.STARS,C.B_CATEGORY,S.B_SUBCATEGORY \n"
-//                + "FROM B_INFO I,B_CAT C,B_SUBCAT S,B_CHECKIN CH,B_REVIEW R\n"
-//                + "WHERE I.B_ID=C.B_ID AND C.B_ID=S.B_ID AND S.B_ID=CH.B_ID AND CH.B_ID=R.B_ID\n"
-//                + "AND ");
         fromCheckin = "";
         fromCheckinHour = "";
         toCheckin = "";
@@ -717,17 +717,9 @@ public class HW3 extends javax.swing.JFrame {
 
         jScrollPane5.setViewportView(subCategoryPanel);
 
-        resultTable.setModel(new javax.swing.table.DefaultTableModel(
-            new Object [][] {
-                {null, null, null, null},
-                {null, null, null, null},
-                {null, null, null, null},
-                {null, null, null, null}
-            },
-            new String [] {
-                "Title 1", "Title 2", "Title 3", "Title 4"
-            }
-        ));
+        DefaultTableModel dtm = new DefaultTableModel(0, 0);
+        resultTable.setModel(dtm
+        );
         jScrollPane8.setViewportView(resultTable);
 
         jPanel1.setBackground(new java.awt.Color(255, 255, 255));
@@ -743,7 +735,7 @@ public class HW3 extends javax.swing.JFrame {
         jPanel1.setLayout(jPanel1Layout);
         jPanel1Layout.setHorizontalGroup(
             jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(queryLabel, javax.swing.GroupLayout.DEFAULT_SIZE, 531, Short.MAX_VALUE)
+            .addComponent(queryLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 531, javax.swing.GroupLayout.PREFERRED_SIZE)
         );
         jPanel1Layout.setVerticalGroup(
             jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -1008,16 +1000,17 @@ public class HW3 extends javax.swing.JFrame {
     private void fromReviewDatePropertyChange(java.beans.PropertyChangeEvent evt) {//GEN-FIRST:event_fromReviewDatePropertyChange
         //System.out.println(evt.getNewValue().toString());
         fromReview = ((JTextField) fromReviewDate.getDateEditor().getUiComponent()).getText();
-        System.out.println(fromReview);
+        //System.out.println(fromReview);
     }//GEN-LAST:event_fromReviewDatePropertyChange
 
     private void toReviewDatePropertyChange(java.beans.PropertyChangeEvent evt) {//GEN-FIRST:event_toReviewDatePropertyChange
         toReview = ((JTextField) toReviewDate.getDateEditor().getUiComponent()).getText();
-        System.out.println(toReview);
+        //System.out.println(toReview);
     }//GEN-LAST:event_toReviewDatePropertyChange
 
     @SuppressWarnings("empty-statement")
     private void executeQueryButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_executeQueryButtonActionPerformed
+        DefaultTableModel dtm = new DefaultTableModel(0, 0);
         try {
             Class.forName("oracle.jdbc.driver.OracleDriver");
         } catch (ClassNotFoundException ex) {
@@ -1028,32 +1021,50 @@ public class HW3 extends javax.swing.JFrame {
         if (finalCat.isEmpty()) {
             queryLabel.setText("Please select atleast one category from business");
         } //only cat selected
-        else if (finalCat.size() > 0 && finalCat1.isEmpty()) {
+        else if (finalCat.size() > 0 && finalCat1.isEmpty()) {  
             String query = "SELECT DISTINCT I.NAME,I.CITY, I.STATE, I.STARS,C.B_CATEGORY \n"
                     + "FROM B_INFO I,B_CAT C\n"
                     + "WHERE I.B_ID=C.B_ID \n"
                     + "AND C.B_CATEGORY= ?";
+        StringBuffer  queryText = new StringBuffer();
+                          queryText.append("SELECT DISTINCT I.NAME,I.CITY, I.STATE, I.STARS,C.B_CATEGORY \n"
+                    + "FROM B_INFO I,B_CAT C\n"
+                    + "WHERE I.B_ID=C.B_ID \n"
+                    + "AND C.B_CATEGORY IN ");
             ResultSet resultSet;
             for (String t : finalCat) {
                 try {
                     preparedStatement = con.prepareStatement(query);
                     preparedStatement.setString(1, t);
                     resultSet = preparedStatement.executeQuery();
-                    //queryLabel.setText(query.toString());
-                    while (resultSet.next()) {
-                        for (int i = 1; i <= 5; i++) {
-                            System.out.print(resultSet.getString(i) + "\t\t");
-                            if (i == 5) {
-                                System.out.println();
-                            }
-                        }
-                        //String cat = resultSet.getString(1);
+                    
+                  
+                    queryText.append("'"+t+"'");
+                    queryLabel.setText("<html><p>"+queryText.toString()+"</p></html>");
+                    resultTable.setModel(dtm);
+                    
+                    String header[] = new String[] { "Business", "City", "State",
+                    "Stars", "Category"};
 
+                    // add header in table model     
+                    dtm.setColumnIdentifiers(header);
+                    
+                    while (resultSet.next()) {
+                        Object[] row = new Object[resultSet.getMetaData().getColumnCount()];
+                        for (int i = 0; i < row.length; i++) {
+                            row[i] = resultSet.getObject(i+1);
+                        }
+                        
+                        dtm.addRow(row);
+                        
                     }
+                    
                 } catch (SQLException ex) {
                     Logger.getLogger(HW3.class.getName()).log(Level.SEVERE, null, ex);
                 }
             }
+            
+            
         } //cat and subCat is selected
         else if (finalCat.size() > 0 && finalCat1.size() > 0) {
 
@@ -1066,7 +1077,7 @@ public class HW3 extends javax.swing.JFrame {
                     int j = 0;
                     for (String t : finalCat) {
                         for (String s : finalCat1) {
-                            System.out.println("I am in checkin box");
+                            //System.out.println("I am in checkin box");
 
                             String[] arrayDays = {"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"};
                             for (int i = 0; i < arrayDays.length; i++) {
@@ -1078,7 +1089,7 @@ public class HW3 extends javax.swing.JFrame {
                             int difference = CheckForDay(fromCheckin, toCheckin);
 //                System.out.println(difference);
                             StringBuffer query1 = new StringBuffer(
-                                    "SELECT DISTINCT C.B_ID,I.name,I.CITY, I.STATE, I.STARS,C.B_CATEGORY,S.B_SUBCATEGORY \n"
+                                    "SELECT DISTINCT I.name,I.CITY, I.STATE, I.STARS,C.B_CATEGORY,S.B_SUBCATEGORY \n"
                                     + "from b_info I,b_cat C,b_subcat S\n"
                                     + "where I.B_ID=C.B_ID and C.B_ID=S.B_ID and C.B_CATEGORY= ? and S.B_SUBCATEGORY= ? and C.B_ID in (  \n"
                                     + "SELECT b_id FROM B_CHECKIN CH WHERE \n"
@@ -1097,26 +1108,32 @@ public class HW3 extends javax.swing.JFrame {
 
                             String fQuery = query1.toString()
                                     + ")AND CH.B_ID IN (SELECT B_ID FROM B_REVIEW WHERE ( \n"
-                                    + "(R_DATE BETWEEN TO_DATE ('"+fromReview+"', 'mm/dd/rr') AND TO_DATE ('"+toReview+"', 'mm/dd/rr')))\n"
-                                    + "GROUP BY B_ID HAVING SUM(STARS)"+operationStar+"'"+valueStar+"' AND SUM(VOTES)"+operationVote+"'"+valueVote+"')\n"
+                                    + "(R_DATE BETWEEN TO_DATE ('" + fromReview + "', 'mm/dd/rr') AND TO_DATE ('" + toReview + "', 'mm/dd/rr')))\n"
+                                    + "GROUP BY B_ID HAVING SUM(STARS)" + operationStar + "'" + valueStar + "' AND SUM(VOTES)" + operationVote + "'" + valueVote + "')\n"
                                     + "group by b_id having sum(NUMBER_CHECKIN)" + operationCheckin + "'" + valueCheckin + "')";
-                            System.out.println(fQuery);
+                            queryLabel.setText("<html><p>"+fQuery.toString()+"</p></html>");
                             try (PreparedStatement preparedStatement = con.prepareStatement(fQuery.toString())) {
                                 preparedStatement.setString(1, t);
                                 preparedStatement.setString(2, s);
 
                                 try (ResultSet resultSet = preparedStatement.executeQuery()) {
-                                    //queryLabel.setText(query.toString());
-                                    while (resultSet.next()) {
-                                        for (int i = 1; i <= 7; i++) {
-                                            System.out.print(resultSet.getString(i) + "\t\t");
-                                            if (i == 7) {
-                                                System.out.println();
-                                            }
-                                        }
-                                        //String cat = resultSet.getString(1);
+                                    resultTable.setModel(dtm);
+                    
+                    String header[] = new String[] { "Business", "City", "State",
+                    "Stars", "Category","Subcategory"};
 
-                                    }
+                    // add header in table model     
+                    dtm.setColumnIdentifiers(header);
+                    
+                    while (resultSet.next()) {
+                        Object[] row = new Object[resultSet.getMetaData().getColumnCount()];
+                        for (int i = 0; i < row.length; i++) {
+                            row[i] = resultSet.getObject(i+1);
+                        }
+                        
+                        dtm.addRow(row);
+                        
+                    }
                                 }
 
                             } catch (SQLException ex) {
@@ -1132,7 +1149,7 @@ public class HW3 extends javax.swing.JFrame {
                     int j = 0;
                     for (String t : finalCat) {
                         for (String s : finalCat1) {
-                            System.out.println("I am in checkin box");
+                            //System.out.println("I am in checkin box");
 
                             String[] arrayDays = {"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"};
                             for (int i = 0; i < arrayDays.length; i++) {
@@ -1144,7 +1161,7 @@ public class HW3 extends javax.swing.JFrame {
                             int difference = CheckForDay(fromCheckin, toCheckin);
 //                System.out.println(difference);
                             StringBuffer query1 = new StringBuffer(
-                                    "SELECT DISTINCT C.B_ID,I.name,I.CITY, I.STATE, I.STARS,C.B_CATEGORY,S.B_SUBCATEGORY \n"
+                                    "SELECT DISTINCT I.name,I.CITY, I.STATE, I.STARS,C.B_CATEGORY,S.B_SUBCATEGORY \n"
                                     + "from b_info I,b_cat C,b_subcat S\n"
                                     + "where I.B_ID=C.B_ID and C.B_ID=S.B_ID and C.B_CATEGORY= ? and S.B_SUBCATEGORY= ? and C.B_ID in (  \n"
                                     + "SELECT b_id FROM B_CHECKIN CH WHERE \n"
@@ -1163,23 +1180,29 @@ public class HW3 extends javax.swing.JFrame {
 
                             String fQuery = query1.toString()
                                     + ")group by b_id having sum(NUMBER_CHECKIN)" + operationCheckin + "'" + valueCheckin + "')";
-                            System.out.println(fQuery);
+                              queryLabel.setText("<html><p>"+fQuery.toString()+"</p></html>");
                             try (PreparedStatement preparedStatement = con.prepareStatement(fQuery.toString())) {
                                 preparedStatement.setString(1, t);
                                 preparedStatement.setString(2, s);
 
                                 try (ResultSet resultSet = preparedStatement.executeQuery()) {
-                                    //queryLabel.setText(query.toString());
-                                    while (resultSet.next()) {
-                                        for (int i = 1; i <= 7; i++) {
-                                            System.out.print(resultSet.getString(i) + "\t\t");
-                                            if (i == 7) {
-                                                System.out.println();
-                                            }
-                                        }
-                                        //String cat = resultSet.getString(1);
+                             resultTable.setModel(dtm);
+                    
+                    String header[] = new String[] { "Business", "City", "State",
+                    "Stars", "Category","Subcategory"};
 
-                                    }
+                    // add header in table model     
+                    dtm.setColumnIdentifiers(header);
+                    
+                    while (resultSet.next()) {
+                        Object[] row = new Object[resultSet.getMetaData().getColumnCount()];
+                        for (int i = 0; i < row.length; i++) {
+                            row[i] = resultSet.getObject(i+1);
+                        }
+                        
+                        dtm.addRow(row);
+                        
+                    }
                                 }
 
                             } catch (SQLException ex) {
@@ -1204,16 +1227,23 @@ public class HW3 extends javax.swing.JFrame {
                             preparedStatement.setString(1, t);
                             preparedStatement.setString(2, s);
                             try (ResultSet resultSet = preparedStatement.executeQuery()) {
-                                //queryLabel.setText(query.toString());
-                                while (resultSet.next()) {
-                                    for (int i = 1; i <= 6; i++) {
-                                        System.out.print(resultSet.getString(i) + "\t\t");
-                                        if (i == 6) {
-                                            System.out.println();
-                                        }
-                                    }
-                                    //String cat = resultSet.getString(1);
-                                }
+                         resultTable.setModel(dtm);
+                      queryLabel.setText("<html><p>"+query+"</p></html>");
+                    String header[] = new String[] { "Business", "City", "State",
+                    "Stars", "Category","Subcategory"};
+
+                    // add header in table model     
+                    dtm.setColumnIdentifiers(header);
+                    
+                    while (resultSet.next()) {
+                        Object[] row = new Object[resultSet.getMetaData().getColumnCount()];
+                        for (int i = 0; i < row.length; i++) {
+                            row[i] = resultSet.getObject(i+1);
+                        }
+                        
+                        dtm.addRow(row);
+                        
+                    }
                             }
                         } catch (SQLException ex) {
                             Logger.getLogger(HW3.class.getName()).log(Level.SEVERE, null, ex);
