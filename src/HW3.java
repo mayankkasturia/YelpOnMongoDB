@@ -1095,7 +1095,7 @@ public class HW3 extends javax.swing.JFrame {
                         
                         String fQuery= query1.toString()+"or (CH.CHECKIN_DAY=? and TO_CHAR(CH.CHECKIN_TIME,'hh24.mi.ss') <= ?))\n"
                                     + "group by b_id having sum(NUMBER_CHECKIN)"+operationCheckin+" ?)";
-                        System.out.println(fQuery);
+                        //System.out.println(fQuery);
                         try (PreparedStatement preparedStatement = con.prepareStatement(fQuery.toString())) {
                             preparedStatement.setString(1, t);
                             preparedStatement.setString(2, s);
@@ -1108,9 +1108,9 @@ public class HW3 extends javax.swing.JFrame {
                             try (ResultSet resultSet = preparedStatement.executeQuery()) {
                                 //queryLabel.setText(query.toString());
                                 while (resultSet.next()) {
-                                    for (int i = 1; i <= 6; i++) {
+                                    for (int i = 1; i <= 7; i++) {
                                         System.out.print(resultSet.getString(i) + "\t\t");
-                                        if (i == 6) {
+                                        if (i == 7) {
                                             System.out.println();
                                         }
                                     }
