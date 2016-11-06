@@ -1016,6 +1016,7 @@ public class HW3 extends javax.swing.JFrame {
         System.out.println(toReview);
     }//GEN-LAST:event_toReviewDatePropertyChange
 
+    @SuppressWarnings("empty-statement")
     private void executeQueryButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_executeQueryButtonActionPerformed
         try {
             Class.forName("oracle.jdbc.driver.OracleDriver");
@@ -1026,9 +1027,7 @@ public class HW3 extends javax.swing.JFrame {
         //nothing is selected
         if (finalCat.isEmpty()) {
             queryLabel.setText("Please select atleast one category from business");
-        } 
-        
-        //only cat selected
+        } //only cat selected
         else if (finalCat.size() > 0 && finalCat1.isEmpty()) {
             String query = "SELECT DISTINCT I.NAME,I.CITY, I.STATE, I.STARS,C.B_CATEGORY \n"
                     + "FROM B_INFO I,B_CAT C\n"
@@ -1054,102 +1053,113 @@ public class HW3 extends javax.swing.JFrame {
                 } catch (SQLException ex) {
                     Logger.getLogger(HW3.class.getName()).log(Level.SEVERE, null, ex);
                 }
-            }}
-        
-        
-        //cat and subCat is selected
-        else if (finalCat.size() > 0 && finalCat1.size() > 0 ) {
+            }
+        } //cat and subCat is selected
+        else if (finalCat.size() > 0 && finalCat1.size() > 0) {
            
-            if(!fromCheckin.isEmpty() && !fromCheckinHour.isEmpty() && !toCheckin.isEmpty() && !toCheckinHour.isEmpty()
-                && !operationCheckin.isEmpty() && !valueCheckin.isEmpty()){
+            if (!fromCheckin.isEmpty() && !fromCheckinHour.isEmpty() && !toCheckin.isEmpty() && !toCheckinHour.isEmpty()
+                    && !operationCheckin.isEmpty() && !valueCheckin.isEmpty()) {
                 System.out.println(fromCheckin);
                 System.out.println(fromCheckinHour);
                 System.out.println(toCheckin);
                 System.out.println(toCheckinHour);
                 System.out.println(operationCheckin);
                 System.out.println(valueCheckin);
-                
-                
-           for (String t : finalCat) {
-                for (String s : finalCat1) {
-            System.out.println("I am in checkin box");
-            CheckForDay(fromCheckin,toCheckin);
-            
-            String query = "SELECT DISTINCT C.B_ID,I.name,I.CITY, I.STATE, I.STARS,C.B_CATEGORY,S.B_SUBCATEGORY \n"
-                    + "from b_info I,b_cat C,b_subcat S\n"
-                    + "where I.B_ID=C.B_ID and C.B_ID=S.B_ID and C.B_CATEGORY= ? and S.B_SUBCATEGORY= ? and C.B_ID in (  \n"
-                    + "SELECT b_id FROM B_CHECKIN CH WHERE \n"
-                    + "((CH.CHECKIN_DAY=? and TO_CHAR(CH.CHECKIN_TIME,'hh24.mi.ss') >= ?) or CH.CHECKIN_DAY='Monday'\n"
-                    + "or CH.CHECKIN_DAY='Tuesday' or (CH.CHECKIN_DAY=? and TO_CHAR(CH.CHECKIN_TIME,'hh24.mi.ss') <= ?))\n"
-                    + "group by b_id having sum(NUMBER_CHECKIN)"+operationCheckin+" ?)";
-            try (PreparedStatement preparedStatement = con.prepareStatement(query)) {
-                preparedStatement.setString(1, t);
-                preparedStatement.setString(2, s);
-                preparedStatement.setString(3, fromCheckin);
-                preparedStatement.setString(4, fromCheckinHour);
-                preparedStatement.setString(5, toCheckin);
-                preparedStatement.setString(6, toCheckinHour);            
-                preparedStatement.setString(7, valueCheckin);
-               
-                try (ResultSet resultSet = preparedStatement.executeQuery()) {
-                    //queryLabel.setText(query.toString());
-                    while (resultSet.next()) {
-                        for (int i = 1; i <= 6; i++) {
-                            System.out.print(resultSet.getString(i) + "\t\t");
-                            if (i == 6) {
-                                System.out.println();
-                            }
-                        }
-                        //String cat = resultSet.getString(1);
-
-                    }
-                }
-                
-            } catch (SQLException ex) {
-                Logger.getLogger(HW3.class.getName()).log(Level.SEVERE, null, ex);
-            }
-                }}//for cat n subcat
-           
-           
-           
-           
-           
-           }//if
-            
-            else{
-            
-            String query = "SELECT DISTINCT I.NAME,I.CITY, I.STATE, I.STARS,C.B_CATEGORY,S.B_SUBCATEGORY \n"
-                    + "FROM B_INFO I,B_CAT C,B_SUBCAT S\n"
-                    + "WHERE I.B_ID=C.B_ID AND C.B_ID=S.B_ID \n"
-                    + "AND C.B_CATEGORY= ? AND S.B_SUBCATEGORY= ?";
-
-            //System.out.println(query.toString());
-            for (String t : finalCat) {
-                for (String s : finalCat1) {
-                    try (PreparedStatement preparedStatement = con.prepareStatement(query)) {
-                        preparedStatement.setString(1, t);
-                        preparedStatement.setString(2, s);
-                        try (ResultSet resultSet = preparedStatement.executeQuery()) {
-                            //queryLabel.setText(query.toString());
-                            while (resultSet.next()) {
-                                for (int i = 1; i <= 6; i++) {
-                                    System.out.print(resultSet.getString(i) + "\t\t");
-                                    if (i == 6) {
-                                        System.out.println();
-                                    }
+                int j=0;
+                for (String t : finalCat) {
+                    for (String s : finalCat1) {
+                        System.out.println("I am in checkin box");
+                     
+                        String[] arrayDays = {"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"};
+                        for (int i = 0; i < arrayDays.length; i++) {
+                            if (fromCheckin == arrayDays[i]) {
+                                j = i;
+                            }}
+//               System.out.println(j);         
+                        int difference = CheckForDay(fromCheckin, toCheckin);
+//                System.out.println(difference);
+                        StringBuffer query1 = new StringBuffer(
+                                "SELECT DISTINCT C.B_ID,I.name,I.CITY, I.STATE, I.STARS,C.B_CATEGORY,S.B_SUBCATEGORY \n"
+                                + "from b_info I,b_cat C,b_subcat S\n"
+                                + "where I.B_ID=C.B_ID and C.B_ID=S.B_ID and C.B_CATEGORY= ? and S.B_SUBCATEGORY= ? and C.B_ID in (  \n"
+                                + "SELECT b_id FROM B_CHECKIN CH WHERE \n"
+                                + "((CH.CHECKIN_DAY=? and TO_CHAR(CH.CHECKIN_TIME,'hh24.mi.ss') >= ?)");
+                        if (difference > 0) {
+                                for(int k=0;k<difference;k++){
+                                j=j+1;
+                                if(j==7){j=0;}
+                                query1.append(" or CH.CHECKIN_DAY='"+arrayDays[j]+"'");
+                                
                                 }
-                                //String cat = resultSet.getString(1);
-                            }
                         }
-                    } catch (SQLException ex) {
-                        Logger.getLogger(HW3.class.getName()).log(Level.SEVERE, null, ex);
+                        
+                        String fQuery= query1.toString()+"or (CH.CHECKIN_DAY=? and TO_CHAR(CH.CHECKIN_TIME,'hh24.mi.ss') <= ?))\n"
+                                    + "group by b_id having sum(NUMBER_CHECKIN)"+operationCheckin+" ?)";
+                        System.out.println(fQuery);
+                        try (PreparedStatement preparedStatement = con.prepareStatement(fQuery.toString())) {
+                            preparedStatement.setString(1, t);
+                            preparedStatement.setString(2, s);
+                            preparedStatement.setString(3, fromCheckin);
+                            preparedStatement.setString(4, fromCheckinHour);
+                            preparedStatement.setString(5, toCheckin);
+                            preparedStatement.setString(6, toCheckinHour);
+                            preparedStatement.setString(7, valueCheckin);
+
+                            try (ResultSet resultSet = preparedStatement.executeQuery()) {
+                                //queryLabel.setText(query.toString());
+                                while (resultSet.next()) {
+                                    for (int i = 1; i <= 6; i++) {
+                                        System.out.print(resultSet.getString(i) + "\t\t");
+                                        if (i == 6) {
+                                            System.out.println();
+                                        }
+                                    }
+                                    //String cat = resultSet.getString(1);
+
+                                }
+                            }
+
+                        } catch (SQLException ex) {
+                            Logger.getLogger(HW3.class.getName()).log(Level.SEVERE, null, ex);
+                        }
                     }
-                }// for subcat
-            }//for cat
-        }
+                }//for cat n subcat
+
+            }//if
+            else {
+
+                String query = "SELECT DISTINCT I.NAME,I.CITY, I.STATE, I.STARS,C.B_CATEGORY,S.B_SUBCATEGORY \n"
+                        + "FROM B_INFO I,B_CAT C,B_SUBCAT S\n"
+                        + "WHERE I.B_ID=C.B_ID AND C.B_ID=S.B_ID \n"
+                        + "AND C.B_CATEGORY= ? AND S.B_SUBCATEGORY= ?";
+
+                //System.out.println(query.toString());
+                for (String t : finalCat) {
+                    for (String s : finalCat1) {
+                        try (PreparedStatement preparedStatement = con.prepareStatement(query)) {
+                            preparedStatement.setString(1, t);
+                            preparedStatement.setString(2, s);
+                            try (ResultSet resultSet = preparedStatement.executeQuery()) {
+                                //queryLabel.setText(query.toString());
+                                while (resultSet.next()) {
+                                    for (int i = 1; i <= 6; i++) {
+                                        System.out.print(resultSet.getString(i) + "\t\t");
+                                        if (i == 6) {
+                                            System.out.println();
+                                        }
+                                    }
+                                    //String cat = resultSet.getString(1);
+                                }
+                            }
+                        } catch (SQLException ex) {
+                            Logger.getLogger(HW3.class.getName()).log(Level.SEVERE, null, ex);
+                        }
+                    }// for subcat
+                }//for cat
+            }
         } // end sub cat
-        
-        
+
+
     }//GEN-LAST:event_executeQueryButtonActionPerformed
 
     /**
@@ -1362,19 +1372,80 @@ public class HW3 extends javax.swing.JFrame {
         }//for
 
     }//subcat method
-    private void CheckForDay(String from, String to){
-    int value1;
-    int value2;
-    if("Sunday".equals(from)){value1=0;}
-    if("Monday".equals(from)){value1=1;}
-    if("Tuesday".equals(from)){value1=2;}
-    if("Wednesday".equals(from)){value1=3;}
-    if("Thursday".equals(from)){value1=4;}
-    if("Friday".equals(from)){value1=5;}
-    if("Saturday".equals(from)){value1=6;}
-    
-    
-    
+
+    private int CheckForDay(String from, String to) {
+        int value1 = 0;
+        int value2 = 0;
+        if ("Sunday".equals(from)) {
+            value1 = 0;
+        }
+        if ("Monday".equals(from)) {
+            value1 = 1;
+        }
+        if ("Tuesday".equals(from)) {
+            value1 = 2;
+        }
+        if ("Wednesday".equals(from)) {
+            value1 = 3;
+        }
+        if ("Thursday".equals(from)) {
+            value1 = 4;
+        }
+        if ("Friday".equals(from)) {
+            value1 = 5;
+        }
+        if ("Saturday".equals(from)) {
+            value1 = 6;
+        }
+
+        if ("Sunday".equals(to)) {
+            value2 = 0;
+        }
+        if ("Monday".equals(to)) {
+            value2 = 1;
+        }
+        if ("Tuesday".equals(to)) {
+            value2 = 2;
+        }
+        if ("Wednesday".equals(to)) {
+            value2 = 3;
+        }
+        if ("Thursday".equals(to)) {
+            value2 = 4;
+        }
+        if ("Friday".equals(to)) {
+            value2 = 5;
+        }
+        if ("Saturday".equals(to)) {
+            value2 = 6;
+        }
+
+        int difference = value2 - value1;
+        if (difference > 0) {
+            difference = difference - 1;
+        }
+        if (difference == -0) {
+            difference = 6;
+        }
+        if (difference == -1) {
+            difference = 5;
+        }
+        if (difference == -2) {
+            difference = 4;
+        }
+        if (difference == -3) {
+            difference = 3;
+        }
+        if (difference == -4) {
+            difference = 2;
+        }
+        if (difference == -5) {
+            difference = 1;
+        }
+        if (difference == -6) {
+            difference = 0;
+        }
+        return difference;
     }//checkForDay
 
 }//class hw3
