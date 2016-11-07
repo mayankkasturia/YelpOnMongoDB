@@ -27,6 +27,6 @@ public class populate {
 //       checkinFetch.checkinTable();
 //       jdbcConnection.query();
 //       reviewFetch.reviewTable();
-        userFetch.userTable();
+ //       userFetch.userTable();
     }
 }

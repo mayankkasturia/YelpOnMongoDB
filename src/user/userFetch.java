@@ -5,15 +5,21 @@
  */
 package user;
 
+import DataLoading.jdbcConnection;
 import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
@@ -60,8 +66,51 @@ public class userFetch {
                 number_frinds= frindsList.size();
                 
                 //System.out.println("Business_id is "+bidList+" user_id is "+userList+" review_id "+reviewList+" stars = "+stars+" on "+startDate+" votes is "+totalVotes  );
-                insertUserData.insertUserQuery(userList, name, reviewCount, avgStar, yelpingSince, number_frinds);
+                //insertUserData.insertUserQuery(userList, name, reviewCount, avgStar, yelpingSince, number_frinds);
+                
+                String url="jdbc:oracle:thin:@localhost:1523:orcl123";
+        String uname="sys as sysdba";
+        String password="Mansimalik2402";
+        try {
+            Class.forName("oracle.jdbc.driver.OracleDriver");
+            try (Connection con = DriverManager.getConnection(url,uname,password)) {
+              
+                Date date1=yelpingSince;
+                java.sql.Date sqlDate = new java.sql.Date(date1.getTime());
+                int count=0;
+                String query ="insert into B_USER values(?,?,?,?,?,?)";
+                try (PreparedStatement stm = con.prepareStatement(query)) {
+                    //((OraclePreparedStatement)stm).setExecuteBatch (3000);
+                    stm.setString(1, userList);
+                    stm.setString(2, name);
+                    stm.setInt(3, reviewCount);
+                    stm.setDouble(4, avgStar);
+                    stm.setDate(5, sqlDate);
+                    stm.setInt(6, number_frinds);
+                    stm.executeUpdate();
+                    stm.addBatch();
+                    count++;
+                    if(count % 100==0){
+                    stm.executeBatch();
+                    con.commit();
+                    stm.clearBatch();
+                    
+                
+                }
+                con.commit();
+                stm.close();
+               
+                }
+                
+            }
 
+            
+            }catch (ClassNotFoundException ex) {
+            Logger.getLogger(jdbcConnection.class.getName()).log(Level.SEVERE, null, ex);
+        }
+                
+                
+                
             }
             // Always close files.
             bufferedReader.close();

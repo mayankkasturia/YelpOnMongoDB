@@ -274,9 +274,66 @@ public class HW3 extends javax.swing.JFrame {
                 } catch (SQLException ex) {
                     Logger.getLogger(HW3.class.getName()).log(Level.SEVERE, null, ex);
                 }
-
                 int row = resultTable.rowAtPoint(evt.getPoint());
                 int col = resultTable.columnAtPoint(evt.getPoint());
+                
+                
+                if(!memberSince.isEmpty() || !operReviewCount.isEmpty() || !operNoOfFriends.isEmpty() || !operAvgStar.isEmpty()
+                        || !valueReviewCount.isEmpty() || !valueNoOfFriends.isEmpty() || !valueAvgStar.isEmpty() || !andOrAttribute.isEmpty()){
+               
+                    if (row >= 0 && col == 0) {
+                    String tableValue = resultTable.getValueAt(row, col).toString();
+
+                    JTable im = new JTable();
+                    DefaultTableModel reviewModel = new DefaultTableModel(0, 0);
+                    im.setModel(reviewModel);
+//        String header[] = new String[]{"Review"};
+//        reviewModel.setColumnIdentifiers(header);
+                    reviewModel.addColumn("Review");
+                    im.setRowHeight(50);
+      
+                    try {
+                        String reviewQuery = "SELECT RE.Review from B_REVIEW RE,B_USER US \n"
+                                + "WHERE US.U_ID= RE.U_ID AND US.USER_NAME='" + tableValue + "'";
+                        System.out.println(reviewQuery);
+                        //System.out.println(reviewQuery);
+                        ResultSet result = stm.executeQuery(reviewQuery);
+                    
+                        Clob myclob = null;
+                        while (result.next()) {
+                            Object[] rowReview = new Object[result.getMetaData().getColumnCount()];
+                            for (int i = 0; i < rowReview.length; i++) {
+                                myclob = (Clob) result.getClob(i + 1);
+                                //System.out.println(clobToString(myclob));
+                                rowReview[i] = clobToString(myclob);
+                                
+                            }
+                            reviewModel.addRow(rowReview);
+
+                        }
+                    } catch (SQLException ex) {
+                        Logger.getLogger(HW3.class.getName()).log(Level.SEVERE, null, ex);
+                    }   catch (IOException ex) {
+                            Logger.getLogger(HW3.class.getName()).log(Level.SEVERE, null, ex);
+                        }
+
+                    mydialog = new JDialog();
+                    mydialog.setSize(new Dimension(1000, 1000));
+                    mydialog.setTitle("Reviews By User");
+                    mydialog.setModalityType(Dialog.ModalityType.APPLICATION_MODAL); // prevent user from doing something else
+                    mydialog.add(im);
+                    mydialog.setVisible(true);
+                    mydialog.setResizable(true);
+                    
+
+//                    JOptionPane.showConfirmDialog(null,
+//                        getPanel(tableValue));
+                }
+                
+                
+                }
+                else{
+                
                 if (row >= 0 && col == 0) {
                     String tableValue = resultTable.getValueAt(row, col).toString();
 
@@ -298,7 +355,7 @@ public class HW3 extends javax.swing.JFrame {
                             Object[] rowReview = new Object[result.getMetaData().getColumnCount()];
                             for (int i = 0; i < rowReview.length; i++) {
                                 myclob = (Clob) result.getClob(i + 1);
-                                System.out.println(clobToString(myclob));
+                                //System.out.println(clobToString(myclob));
                                 rowReview[i] = clobToString(myclob);
                                 
                             }
@@ -321,7 +378,7 @@ public class HW3 extends javax.swing.JFrame {
 
 //                    JOptionPane.showConfirmDialog(null,
 //                        getPanel(tableValue));
-                }
+                }}
             }
         });
     }
@@ -1590,6 +1647,8 @@ public class HW3 extends javax.swing.JFrame {
                     }
                
                 }
+                  queryLabel.setText("<html><p>"+userQuery.toString()+"</p></html>");
+                  
                                  ResultSet userResultSet = null;
                 try {
                     userResultSet = stm.executeQuery(userQuery.toString());
@@ -1669,7 +1728,7 @@ public class HW3 extends javax.swing.JFrame {
                
                 }
                
-
+                     queryLabel.setText("<html><p>"+userQuery.toString()+"</p></html>");
                                 try (ResultSet userResultSet = stm.executeQuery(userQuery.toString())) {
                              resultTable.setModel(dtm);
                     
