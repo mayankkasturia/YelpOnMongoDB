@@ -36,6 +36,12 @@
 
       <Layout class="org.netbeans.modules.form.compat2.layouts.support.JTabbedPaneSupportLayout"/>
     </Container>
+    <Component class="javax.swing.ButtonGroup" name="buttonGroup1">
+    </Component>
+    <Component class="javax.swing.ButtonGroup" name="buttonGroup2">
+    </Component>
+    <Component class="javax.swing.ButtonGroup" name="buttonGroup3">
+    </Component>
   </NonVisualComponents>
   <Properties>
     <Property name="defaultCloseOperation" type="int" value="3"/>
@@ -59,12 +65,12 @@
   <Layout>
     <DimensionLayout dim="0">
       <Group type="103" groupAlignment="0" attributes="0">
-          <Component id="jScrollPane6" alignment="0" max="32767" attributes="0"/>
+          <Component id="jScrollPane6" alignment="0" pref="1376" max="32767" attributes="0"/>
       </Group>
     </DimensionLayout>
     <DimensionLayout dim="1">
       <Group type="103" groupAlignment="0" attributes="0">
-          <Component id="jScrollPane6" alignment="0" pref="1201" max="32767" attributes="0"/>
+          <Component id="jScrollPane6" alignment="1" max="32767" attributes="0"/>
       </Group>
     </DimensionLayout>
   </Layout>
@@ -90,102 +96,118 @@
                       <EmptySpace max="-2" attributes="0"/>
                       <Group type="103" groupAlignment="0" attributes="0">
                           <Group type="102" attributes="0">
-                              <Group type="103" groupAlignment="0" attributes="0">
-                                  <Component id="categoryLabel" min="-2" pref="245" max="-2" attributes="0"/>
-                                  <Component id="jScrollPane2" alignment="0" max="32767" attributes="0"/>
-                              </Group>
-                              <EmptySpace max="-2" attributes="0"/>
-                              <Group type="103" groupAlignment="0" attributes="0">
-                                  <Component id="subCategoryLabel" min="-2" pref="285" max="-2" attributes="0"/>
-                                  <Component id="jScrollPane5" max="32767" attributes="0"/>
-                              </Group>
-                              <EmptySpace type="unrelated" pref="19" max="32767" attributes="0"/>
-                          </Group>
-                          <Group type="102" attributes="0">
-                              <Group type="103" groupAlignment="0" attributes="0">
-                                  <Component id="jPanel2" alignment="0" min="-2" max="-2" attributes="0"/>
-                                  <Group type="103" alignment="0" groupAlignment="1" max="-2" attributes="0">
-                                      <Component id="jLabel6" alignment="0" max="32767" attributes="0"/>
-                                      <Component id="jPanel1" alignment="0" min="-2" max="-2" attributes="0"/>
-                                      <Component id="checkinPanel1" alignment="0" max="32767" attributes="0"/>
+                              <Group type="103" groupAlignment="1" attributes="0">
+                                  <Group type="102" alignment="1" attributes="0">
+                                      <EmptySpace min="0" pref="0" max="32767" attributes="0"/>
+                                      <Component id="jPanel3" min="-2" max="-2" attributes="0"/>
                                   </Group>
-                                  <Component id="executeQueryButton" alignment="0" min="-2" pref="531" max="-2" attributes="0"/>
+                                  <Group type="102" alignment="0" attributes="0">
+                                      <Group type="103" groupAlignment="0" attributes="0">
+                                          <Component id="categoryLabel" min="-2" pref="245" max="-2" attributes="0"/>
+                                          <Component id="jScrollPane2" alignment="0" pref="0" max="32767" attributes="0"/>
+                                      </Group>
+                                      <EmptySpace max="-2" attributes="0"/>
+                                      <Group type="103" groupAlignment="0" attributes="0">
+                                          <Component id="subCategoryLabel" min="-2" pref="285" max="-2" attributes="0"/>
+                                          <Component id="jScrollPane5" pref="0" max="32767" attributes="0"/>
+                                      </Group>
+                                  </Group>
                               </Group>
+                              <Group type="103" groupAlignment="0" attributes="0">
+                                  <Group type="102" attributes="0">
+                                      <EmptySpace min="-2" max="-2" attributes="0"/>
+                                      <Group type="103" groupAlignment="0" attributes="0">
+                                          <Group type="102" alignment="0" attributes="0">
+                                              <Component id="checkinLabel" min="-2" pref="251" max="-2" attributes="0"/>
+                                              <EmptySpace max="-2" attributes="0"/>
+                                              <Component id="jLabel4" min="-2" pref="237" max="-2" attributes="0"/>
+                                              <EmptySpace type="separate" max="-2" attributes="0"/>
+                                              <Component id="jLabel5" min="-2" pref="251" max="-2" attributes="0"/>
+                                              <EmptySpace min="0" pref="69" max="32767" attributes="0"/>
+                                          </Group>
+                                          <Group type="102" alignment="0" attributes="0">
+                                              <Component id="jLabel6" max="32767" attributes="0"/>
+                                              <EmptySpace min="-2" pref="174" max="-2" attributes="0"/>
+                                          </Group>
+                                          <Group type="102" alignment="0" attributes="0">
+                                              <Component id="checkinPanel" min="-2" max="-2" attributes="0"/>
+                                              <EmptySpace max="-2" attributes="0"/>
+                                              <Component id="reviewPanel" min="-2" max="-2" attributes="0"/>
+                                              <EmptySpace max="-2" attributes="0"/>
+                                              <Component id="jScrollPane8" pref="0" max="32767" attributes="0"/>
+                                              <EmptySpace max="-2" attributes="0"/>
+                                          </Group>
+                                      </Group>
+                                  </Group>
+                                  <Group type="102" alignment="0" attributes="0">
+                                      <EmptySpace min="-2" pref="30" max="-2" attributes="0"/>
+                                      <Component id="jRadioButton1" min="-2" pref="106" max="-2" attributes="0"/>
+                                      <EmptySpace type="unrelated" max="-2" attributes="0"/>
+                                      <Component id="jRadioButton2" min="-2" pref="81" max="-2" attributes="0"/>
+                                      <EmptySpace min="-2" pref="26" max="-2" attributes="0"/>
+                                      <Component id="executeQueryButton" min="-2" pref="496" max="-2" attributes="0"/>
+                                      <EmptySpace min="0" pref="0" max="32767" attributes="0"/>
+                                  </Group>
+                              </Group>
+                          </Group>
+                          <Group type="102" alignment="0" attributes="0">
+                              <Group type="103" groupAlignment="1" max="-2" attributes="0">
+                                  <Component id="jPanel2" alignment="0" max="32767" attributes="0"/>
+                                  <Component id="checkinPanel1" alignment="0" max="32767" attributes="0"/>
+                              </Group>
+                              <EmptySpace type="separate" max="-2" attributes="0"/>
+                              <Component id="jPanel1" min="-2" max="-2" attributes="0"/>
                               <EmptySpace max="32767" attributes="0"/>
                           </Group>
                       </Group>
-                      <Group type="103" groupAlignment="0" attributes="0">
-                          <Component id="jLabel5" max="32767" attributes="0"/>
-                          <Group type="102" alignment="0" attributes="0">
-                              <Group type="103" groupAlignment="1" max="-2" attributes="0">
-                                  <Component id="checkinLabel" max="32767" attributes="0"/>
-                                  <Component id="checkinPanel" max="32767" attributes="0"/>
-                              </Group>
-                              <EmptySpace max="-2" attributes="0"/>
-                              <Group type="103" groupAlignment="0" attributes="0">
-                                  <Group type="102" attributes="0">
-                                      <EmptySpace min="0" pref="0" max="32767" attributes="0"/>
-                                      <Component id="reviewPanel" min="-2" max="-2" attributes="0"/>
-                                  </Group>
-                                  <Group type="102" alignment="0" attributes="0">
-                                      <Component id="jLabel4" min="-2" pref="237" max="-2" attributes="0"/>
-                                      <EmptySpace min="0" pref="12" max="32767" attributes="0"/>
-                                  </Group>
-                              </Group>
-                          </Group>
-                          <Component id="jScrollPane8" max="32767" attributes="0"/>
-                      </Group>
-                      <EmptySpace max="-2" attributes="0"/>
                   </Group>
               </Group>
             </DimensionLayout>
             <DimensionLayout dim="1">
               <Group type="103" groupAlignment="0" attributes="0">
                   <Group type="102" alignment="0" attributes="0">
-                      <EmptySpace min="-2" pref="25" max="-2" attributes="0"/>
+                      <EmptySpace min="-2" max="-2" attributes="0"/>
+                      <Group type="103" groupAlignment="0" max="-2" attributes="0">
+                          <Component id="jPanel3" max="32767" attributes="0"/>
+                          <Component id="executeQueryButton" alignment="0" min="-2" pref="49" max="-2" attributes="0"/>
+                          <Group type="103" alignment="0" groupAlignment="3" attributes="0">
+                              <Component id="jRadioButton1" alignment="3" max="32767" attributes="0"/>
+                              <Component id="jRadioButton2" alignment="3" max="32767" attributes="0"/>
+                          </Group>
+                      </Group>
+                      <EmptySpace min="-2" max="-2" attributes="0"/>
                       <Group type="103" groupAlignment="3" attributes="0">
                           <Component id="categoryLabel" alignment="3" min="-2" pref="71" max="-2" attributes="0"/>
                           <Component id="subCategoryLabel" alignment="3" min="-2" pref="71" max="-2" attributes="0"/>
                           <Component id="checkinLabel" alignment="3" min="-2" pref="71" max="-2" attributes="0"/>
                           <Component id="jLabel4" alignment="3" min="-2" pref="71" max="-2" attributes="0"/>
+                          <Component id="jLabel5" alignment="3" min="-2" pref="52" max="-2" attributes="0"/>
                       </Group>
                       <EmptySpace min="-2" max="-2" attributes="0"/>
                       <Group type="103" groupAlignment="0" attributes="0">
-                          <Group type="102" attributes="0">
-                              <Group type="103" groupAlignment="0" attributes="0">
-                                  <Component id="checkinPanel" max="32767" attributes="0"/>
-                                  <Component id="reviewPanel" max="32767" attributes="0"/>
+                          <Group type="103" alignment="0" groupAlignment="1" attributes="0">
+                              <Component id="jPanel2" min="-2" max="-2" attributes="0"/>
+                              <Group type="102" attributes="0">
+                                  <Group type="103" groupAlignment="1" attributes="0">
+                                      <Component id="reviewPanel" min="-2" max="-2" attributes="0"/>
+                                      <Component id="checkinPanel" min="-2" max="-2" attributes="0"/>
+                                      <Component id="jScrollPane8" min="-2" pref="570" max="-2" attributes="0"/>
+                                  </Group>
+                                  <EmptySpace min="-2" pref="16" max="-2" attributes="0"/>
+                                  <Component id="jLabel6" min="-2" pref="53" max="-2" attributes="0"/>
                               </Group>
-                              <EmptySpace min="-2" pref="11" max="-2" attributes="0"/>
                           </Group>
-                          <Group type="102" attributes="0">
-                              <Component id="jScrollPane2" max="32767" attributes="0"/>
-                              <EmptySpace max="-2" attributes="0"/>
+                          <Group type="103" alignment="0" groupAlignment="0" max="-2" attributes="0">
+                              <Component id="jScrollPane2" pref="570" max="32767" attributes="0"/>
+                              <Component id="jScrollPane5" pref="0" max="32767" attributes="0"/>
                           </Group>
-                          <Group type="102" attributes="0">
-                              <Component id="jScrollPane5" max="32767" attributes="0"/>
-                              <EmptySpace max="-2" attributes="0"/>
-                          </Group>
-                      </Group>
-                      <Group type="103" groupAlignment="0" max="-2" attributes="0">
-                          <Component id="jLabel5" pref="52" max="32767" attributes="0"/>
-                          <Component id="jPanel2" max="32767" attributes="0"/>
                       </Group>
                       <EmptySpace max="-2" attributes="0"/>
-                      <Group type="103" groupAlignment="0" attributes="0">
-                          <Group type="102" attributes="0">
-                              <Component id="checkinPanel1" min="-2" max="-2" attributes="0"/>
-                              <EmptySpace max="-2" attributes="0"/>
-                              <Component id="jLabel6" min="-2" pref="53" max="-2" attributes="0"/>
-                              <EmptySpace min="-2" pref="18" max="-2" attributes="0"/>
-                              <Component id="jPanel1" min="-2" max="-2" attributes="0"/>
-                              <EmptySpace max="-2" attributes="0"/>
-                              <Component id="executeQueryButton" min="-2" pref="49" max="-2" attributes="0"/>
-                              <EmptySpace min="0" pref="51" max="32767" attributes="0"/>
-                          </Group>
-                          <Component id="jScrollPane8" max="32767" attributes="0"/>
+                      <Group type="103" groupAlignment="1" attributes="0">
+                          <Component id="checkinPanel1" min="-2" max="-2" attributes="0"/>
+                          <Component id="jPanel1" min="-2" max="-2" attributes="0"/>
                       </Group>
-                      <EmptySpace max="-2" attributes="0"/>
+                      <EmptySpace max="32767" attributes="0"/>
                   </Group>
               </Group>
             </DimensionLayout>
@@ -238,17 +260,6 @@
                       <Group type="102" attributes="0">
                           <EmptySpace max="-2" attributes="0"/>
                           <Group type="103" groupAlignment="0" attributes="0">
-                              <Group type="102" alignment="1" attributes="0">
-                                  <Group type="103" groupAlignment="1" attributes="0">
-                                      <Component id="toComboBox" max="32767" attributes="0"/>
-                                      <Component id="fromComboBox" max="32767" attributes="0"/>
-                                  </Group>
-                                  <EmptySpace type="separate" max="-2" attributes="0"/>
-                                  <Group type="103" groupAlignment="0" max="-2" attributes="0">
-                                      <Component id="fromHourComboBox" max="32767" attributes="0"/>
-                                      <Component id="toHourComboBox" max="32767" attributes="0"/>
-                                  </Group>
-                              </Group>
                               <Group type="102" attributes="0">
                                   <Group type="103" groupAlignment="0" attributes="0">
                                       <Component id="fromLabel" alignment="0" min="-2" max="-2" attributes="0"/>
@@ -261,6 +272,16 @@
                                       </Group>
                                   </Group>
                                   <EmptySpace min="0" pref="0" max="32767" attributes="0"/>
+                              </Group>
+                              <Group type="102" attributes="0">
+                                  <Component id="fromComboBox" min="-2" pref="99" max="-2" attributes="0"/>
+                                  <EmptySpace min="-2" pref="30" max="-2" attributes="0"/>
+                                  <Component id="fromHourComboBox" max="32767" attributes="0"/>
+                              </Group>
+                              <Group type="102" alignment="0" attributes="0">
+                                  <Component id="toComboBox" min="-2" pref="99" max="-2" attributes="0"/>
+                                  <EmptySpace min="-2" pref="30" max="-2" attributes="0"/>
+                                  <Component id="toHourComboBox" max="32767" attributes="0"/>
                               </Group>
                           </Group>
                           <EmptySpace max="-2" attributes="0"/>
@@ -277,21 +298,21 @@
                               <Component id="fromComboBox" alignment="3" min="-2" max="-2" attributes="0"/>
                               <Component id="fromHourComboBox" alignment="3" min="-2" max="-2" attributes="0"/>
                           </Group>
-                          <EmptySpace max="-2" attributes="0"/>
+                          <EmptySpace min="-2" pref="49" max="-2" attributes="0"/>
                           <Component id="toLabel" min="-2" max="-2" attributes="0"/>
-                          <EmptySpace max="-2" attributes="0"/>
+                          <EmptySpace type="separate" max="-2" attributes="0"/>
                           <Group type="103" groupAlignment="3" attributes="0">
                               <Component id="toComboBox" alignment="3" min="-2" max="-2" attributes="0"/>
                               <Component id="toHourComboBox" alignment="3" min="-2" max="-2" attributes="0"/>
                           </Group>
-                          <EmptySpace type="separate" max="-2" attributes="0"/>
+                          <EmptySpace min="-2" pref="46" max="-2" attributes="0"/>
                           <Component id="noCheckinLabel" min="-2" max="-2" attributes="0"/>
-                          <EmptySpace max="-2" attributes="0"/>
+                          <EmptySpace type="separate" max="-2" attributes="0"/>
                           <Group type="103" groupAlignment="3" attributes="0">
-                              <Component id="checkinValueComboBox" alignment="3" min="-2" max="-2" attributes="0"/>
                               <Component id="checkinValueTextField" alignment="3" min="-2" max="-2" attributes="0"/>
+                              <Component id="checkinValueComboBox" alignment="3" min="-2" max="-2" attributes="0"/>
                           </Group>
-                          <EmptySpace max="32767" attributes="0"/>
+                          <EmptySpace pref="264" max="32767" attributes="0"/>
                       </Group>
                   </Group>
                 </DimensionLayout>
@@ -446,30 +467,7 @@
                   <Group type="103" groupAlignment="0" attributes="0">
                       <Group type="102" attributes="0">
                           <EmptySpace max="-2" attributes="0"/>
-                          <Group type="103" groupAlignment="0" attributes="0">
-                              <Group type="102" alignment="1" attributes="0">
-                                  <Group type="103" groupAlignment="0" attributes="0">
-                                      <Component id="starsLabel" alignment="0" min="-2" max="-2" attributes="0"/>
-                                      <Component id="starValueLabel" alignment="0" min="-2" max="-2" attributes="0"/>
-                                  </Group>
-                                  <EmptySpace max="32767" attributes="0"/>
-                                  <Group type="103" groupAlignment="0" attributes="0">
-                                      <Component id="starsValueTextField" min="-2" pref="76" max="-2" attributes="0"/>
-                                      <Component id="starsComboBox" min="-2" pref="109" max="-2" attributes="0"/>
-                                  </Group>
-                              </Group>
-                              <Group type="102" attributes="0">
-                                  <Group type="103" groupAlignment="0" attributes="0">
-                                      <Component id="votesLabel" alignment="0" min="-2" max="-2" attributes="0"/>
-                                      <Component id="votesValueLabel" alignment="0" min="-2" max="-2" attributes="0"/>
-                                  </Group>
-                                  <EmptySpace min="-2" pref="30" max="-2" attributes="0"/>
-                                  <Group type="103" groupAlignment="0" attributes="0">
-                                      <Component id="votesComboBox" min="-2" pref="109" max="-2" attributes="0"/>
-                                      <Component id="votesValueTextField" min="-2" pref="76" max="-2" attributes="0"/>
-                                  </Group>
-                                  <EmptySpace min="0" pref="0" max="32767" attributes="0"/>
-                              </Group>
+                          <Group type="103" groupAlignment="1" attributes="0">
                               <Group type="102" alignment="0" attributes="0">
                                   <Group type="103" groupAlignment="0" attributes="0">
                                       <Component id="fromReviewLabel" alignment="0" min="-2" max="-2" attributes="0"/>
@@ -480,9 +478,33 @@
                                       <Component id="fromReviewDate" max="32767" attributes="0"/>
                                       <Component id="toReviewDate" max="32767" attributes="0"/>
                                   </Group>
+                                  <EmptySpace min="-2" pref="15" max="-2" attributes="0"/>
+                              </Group>
+                              <Group type="102" alignment="0" attributes="0">
+                                  <Component id="starsLabel" min="-2" max="-2" attributes="0"/>
+                                  <EmptySpace max="32767" attributes="0"/>
+                                  <Component id="starsComboBox" min="-2" pref="109" max="-2" attributes="0"/>
+                                  <EmptySpace max="-2" attributes="0"/>
+                              </Group>
+                              <Group type="102" alignment="0" attributes="0">
+                                  <Component id="votesLabel" min="-2" max="-2" attributes="0"/>
+                                  <EmptySpace max="32767" attributes="0"/>
+                                  <Component id="votesComboBox" min="-2" pref="109" max="-2" attributes="0"/>
+                                  <EmptySpace max="-2" attributes="0"/>
+                              </Group>
+                              <Group type="102" alignment="0" attributes="0">
+                                  <Component id="votesValueLabel" min="-2" max="-2" attributes="0"/>
+                                  <EmptySpace pref="65" max="32767" attributes="0"/>
+                                  <Component id="votesValueTextField" min="-2" pref="76" max="-2" attributes="0"/>
+                                  <EmptySpace min="-2" pref="48" max="-2" attributes="0"/>
+                              </Group>
+                              <Group type="102" alignment="1" attributes="0">
+                                  <Component id="starValueLabel" min="-2" max="-2" attributes="0"/>
+                                  <EmptySpace max="32767" attributes="0"/>
+                                  <Component id="starsValueTextField" min="-2" pref="76" max="-2" attributes="0"/>
+                                  <EmptySpace min="-2" pref="48" max="-2" attributes="0"/>
                               </Group>
                           </Group>
-                          <EmptySpace min="-2" pref="15" max="-2" attributes="0"/>
                       </Group>
                   </Group>
                 </DimensionLayout>
@@ -499,27 +521,27 @@
                               <Component id="toReviewLabel" min="-2" max="-2" attributes="0"/>
                               <Component id="toReviewDate" min="-2" max="-2" attributes="0"/>
                           </Group>
-                          <EmptySpace max="32767" attributes="0"/>
+                          <EmptySpace min="-2" pref="47" max="-2" attributes="0"/>
                           <Group type="103" groupAlignment="3" attributes="0">
-                              <Component id="starsComboBox" alignment="3" min="-2" max="-2" attributes="0"/>
                               <Component id="starsLabel" alignment="3" min="-2" max="-2" attributes="0"/>
+                              <Component id="starsComboBox" alignment="3" min="-2" max="-2" attributes="0"/>
                           </Group>
-                          <EmptySpace max="-2" attributes="0"/>
+                          <EmptySpace type="unrelated" max="-2" attributes="0"/>
                           <Group type="103" groupAlignment="3" attributes="0">
                               <Component id="starValueLabel" alignment="3" min="-2" max="-2" attributes="0"/>
                               <Component id="starsValueTextField" alignment="3" min="-2" max="-2" attributes="0"/>
                           </Group>
-                          <EmptySpace min="-2" pref="30" max="-2" attributes="0"/>
+                          <EmptySpace min="-2" pref="49" max="-2" attributes="0"/>
                           <Group type="103" groupAlignment="3" attributes="0">
-                              <Component id="votesComboBox" alignment="3" min="-2" max="-2" attributes="0"/>
                               <Component id="votesLabel" alignment="3" min="-2" max="-2" attributes="0"/>
+                              <Component id="votesComboBox" alignment="3" min="-2" max="-2" attributes="0"/>
                           </Group>
-                          <EmptySpace max="-2" attributes="0"/>
+                          <EmptySpace type="unrelated" max="-2" attributes="0"/>
                           <Group type="103" groupAlignment="3" attributes="0">
                               <Component id="votesValueLabel" alignment="3" min="-2" max="-2" attributes="0"/>
                               <Component id="votesValueTextField" alignment="3" min="-2" max="-2" attributes="0"/>
                           </Group>
-                          <EmptySpace max="-2" attributes="0"/>
+                          <EmptySpace pref="240" max="32767" attributes="0"/>
                       </Group>
                   </Group>
                 </DimensionLayout>
@@ -711,35 +733,43 @@
               <Layout>
                 <DimensionLayout dim="0">
                   <Group type="103" groupAlignment="0" attributes="0">
-                      <Group type="102" alignment="0" attributes="0">
+                      <Group type="102" attributes="0">
                           <EmptySpace max="-2" attributes="0"/>
                           <Group type="103" groupAlignment="0" attributes="0">
-                              <Group type="102" alignment="1" attributes="0">
-                                  <Group type="103" groupAlignment="1" attributes="0">
-                                      <Component id="toComboBox1" alignment="1" max="32767" attributes="0"/>
-                                      <Component id="fromComboBox1" alignment="1" pref="396" max="32767" attributes="0"/>
-                                  </Group>
-                                  <EmptySpace type="separate" max="-2" attributes="0"/>
-                                  <Group type="103" groupAlignment="0" max="-2" attributes="0">
-                                      <Component id="fromHourComboBox1" alignment="0" max="32767" attributes="0"/>
-                                      <Component id="toHourComboBox1" alignment="0" max="32767" attributes="0"/>
-                                  </Group>
+                              <Group type="102" alignment="0" attributes="0">
+                                  <Component id="fromLabel1" min="-2" max="-2" attributes="0"/>
+                                  <EmptySpace min="-2" pref="57" max="-2" attributes="0"/>
+                                  <Component id="memberSinceDateBox" min="-2" pref="175" max="-2" attributes="0"/>
                               </Group>
                               <Group type="102" alignment="0" attributes="0">
-                                  <Group type="103" groupAlignment="0" attributes="0">
-                                      <Component id="fromLabel1" alignment="0" min="-2" max="-2" attributes="0"/>
-                                      <Component id="toLabel1" alignment="0" min="-2" max="-2" attributes="0"/>
-                                      <Component id="noCheckinLabel1" alignment="0" min="-2" max="-2" attributes="0"/>
-                                      <Group type="102" alignment="0" attributes="0">
-                                          <Component id="checkinValueComboBox1" min="-2" pref="109" max="-2" attributes="0"/>
-                                          <EmptySpace min="-2" pref="36" max="-2" attributes="0"/>
-                                          <Component id="checkinValueTextField1" min="-2" pref="76" max="-2" attributes="0"/>
+                                  <Group type="103" groupAlignment="1" attributes="0">
+                                      <Component id="toLabel4" alignment="1" min="-2" pref="101" max="-2" attributes="0"/>
+                                      <Group type="103" groupAlignment="0" attributes="0">
+                                          <Component id="toLabel1" alignment="0" min="-2" max="-2" attributes="0"/>
+                                          <Component id="toLabel2" alignment="0" min="-2" max="-2" attributes="0"/>
+                                          <Component id="toLabel3" alignment="0" min="-2" max="-2" attributes="0"/>
                                       </Group>
                                   </Group>
-                                  <EmptySpace min="0" pref="0" max="32767" attributes="0"/>
+                                  <EmptySpace min="-2" pref="23" max="-2" attributes="0"/>
+                                  <Group type="103" groupAlignment="0" max="-2" attributes="0">
+                                      <Group type="102" attributes="0">
+                                          <Group type="103" groupAlignment="0" attributes="0">
+                                              <Component id="reviewCountComboBox" alignment="0" min="-2" pref="109" max="-2" attributes="0"/>
+                                              <Component id="numberOfFriendsComboBox" alignment="0" min="-2" pref="109" max="-2" attributes="0"/>
+                                              <Component id="avgStarComboBox" alignment="0" min="-2" pref="109" max="-2" attributes="0"/>
+                                          </Group>
+                                          <EmptySpace min="-2" pref="85" max="-2" attributes="0"/>
+                                          <Group type="103" groupAlignment="0" attributes="0">
+                                              <Component id="avgStarValueTextField" min="-2" pref="76" max="-2" attributes="0"/>
+                                              <Component id="numberOfFriendsValueTextField" min="-2" pref="76" max="-2" attributes="0"/>
+                                              <Component id="reviewCountValueTextField" min="-2" pref="76" max="-2" attributes="0"/>
+                                          </Group>
+                                      </Group>
+                                      <Component id="andOrComboBox" max="32767" attributes="0"/>
+                                  </Group>
                               </Group>
                           </Group>
-                          <EmptySpace max="-2" attributes="0"/>
+                          <EmptySpace pref="92" max="32767" attributes="0"/>
                       </Group>
                   </Group>
                 </DimensionLayout>
@@ -747,27 +777,34 @@
                   <Group type="103" groupAlignment="0" attributes="0">
                       <Group type="102" alignment="0" attributes="0">
                           <EmptySpace max="-2" attributes="0"/>
-                          <Component id="fromLabel1" min="-2" max="-2" attributes="0"/>
-                          <EmptySpace max="-2" attributes="0"/>
-                          <Group type="103" groupAlignment="3" attributes="0">
-                              <Component id="fromComboBox1" alignment="3" min="-2" max="-2" attributes="0"/>
-                              <Component id="fromHourComboBox1" alignment="3" min="-2" max="-2" attributes="0"/>
+                          <Group type="103" groupAlignment="0" attributes="0">
+                              <Component id="fromLabel1" min="-2" max="-2" attributes="0"/>
+                              <Component id="memberSinceDateBox" min="-2" max="-2" attributes="0"/>
                           </Group>
-                          <EmptySpace max="-2" attributes="0"/>
-                          <Component id="toLabel1" min="-2" max="-2" attributes="0"/>
-                          <EmptySpace max="-2" attributes="0"/>
+                          <EmptySpace min="-2" pref="25" max="-2" attributes="0"/>
                           <Group type="103" groupAlignment="3" attributes="0">
-                              <Component id="toComboBox1" alignment="3" min="-2" max="-2" attributes="0"/>
-                              <Component id="toHourComboBox1" alignment="3" min="-2" max="-2" attributes="0"/>
+                              <Component id="toLabel1" alignment="3" min="-2" max="-2" attributes="0"/>
+                              <Component id="reviewCountComboBox" alignment="3" min="-2" max="-2" attributes="0"/>
+                              <Component id="reviewCountValueTextField" alignment="3" min="-2" max="-2" attributes="0"/>
                           </Group>
                           <EmptySpace type="separate" max="-2" attributes="0"/>
-                          <Component id="noCheckinLabel1" min="-2" max="-2" attributes="0"/>
-                          <EmptySpace max="-2" attributes="0"/>
                           <Group type="103" groupAlignment="3" attributes="0">
-                              <Component id="checkinValueComboBox1" alignment="3" min="-2" max="-2" attributes="0"/>
-                              <Component id="checkinValueTextField1" alignment="3" min="-2" max="-2" attributes="0"/>
+                              <Component id="toLabel2" alignment="3" min="-2" max="-2" attributes="0"/>
+                              <Component id="numberOfFriendsComboBox" alignment="3" min="-2" max="-2" attributes="0"/>
+                              <Component id="numberOfFriendsValueTextField" alignment="3" min="-2" max="-2" attributes="0"/>
                           </Group>
-                          <EmptySpace pref="88" max="32767" attributes="0"/>
+                          <EmptySpace type="unrelated" max="-2" attributes="0"/>
+                          <Group type="103" groupAlignment="3" attributes="0">
+                              <Component id="toLabel3" alignment="3" min="-2" max="-2" attributes="0"/>
+                              <Component id="avgStarValueTextField" alignment="3" min="-2" max="-2" attributes="0"/>
+                              <Component id="avgStarComboBox" alignment="3" min="-2" max="-2" attributes="0"/>
+                          </Group>
+                          <EmptySpace type="separate" max="-2" attributes="0"/>
+                          <Group type="103" groupAlignment="3" attributes="0">
+                              <Component id="toLabel4" alignment="3" pref="34" max="32767" attributes="0"/>
+                              <Component id="andOrComboBox" alignment="3" min="-2" max="-2" attributes="0"/>
+                          </Group>
+                          <EmptySpace max="-2" attributes="0"/>
                       </Group>
                   </Group>
                 </DimensionLayout>
@@ -785,26 +822,7 @@
                     <Property name="labelFor" type="java.awt.Component" editor="org.netbeans.modules.form.ComponentChooserEditor">
                       <ComponentRef name="fromComboBox"/>
                     </Property>
-                    <Property name="text" type="java.lang.String" value="From"/>
-                  </Properties>
-                </Component>
-                <Component class="javax.swing.JComboBox" name="fromComboBox1">
-                  <Properties>
-                    <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Comic Sans MS" size="16" style="0"/>
-                    </Property>
-                    <Property name="maximumRowCount" type="int" value="7"/>
-                    <Property name="model" type="javax.swing.ComboBoxModel" editor="org.netbeans.modules.form.editors2.ComboBoxModelEditor">
-                      <StringArray count="7">
-                        <StringItem index="0" value="Sunday"/>
-                        <StringItem index="1" value="Monday"/>
-                        <StringItem index="2" value="Tuesday"/>
-                        <StringItem index="3" value="Wednesday"/>
-                        <StringItem index="4" value="Thursday"/>
-                        <StringItem index="5" value="Friday"/>
-                        <StringItem index="6" value="Saturday"/>
-                      </StringArray>
-                    </Property>
+                    <Property name="text" type="java.lang.String" value="Member Since"/>
                   </Properties>
                 </Component>
                 <Component class="javax.swing.JLabel" name="toLabel1">
@@ -819,98 +837,40 @@
                     <Property name="labelFor" type="java.awt.Component" editor="org.netbeans.modules.form.ComponentChooserEditor">
                       <ComponentRef name="toComboBox"/>
                     </Property>
-                    <Property name="text" type="java.lang.String" value="to"/>
+                    <Property name="text" type="java.lang.String" value="Review Count"/>
                   </Properties>
                 </Component>
-                <Component class="javax.swing.JComboBox" name="toComboBox1">
+                <Component class="com.toedter.calendar.JDateChooser" name="memberSinceDateBox">
                   <Properties>
-                    <Property name="maximumRowCount" type="int" value="7"/>
-                    <Property name="model" type="javax.swing.ComboBoxModel" editor="org.netbeans.modules.form.editors2.ComboBoxModelEditor">
-                      <StringArray count="7">
-                        <StringItem index="0" value="Sunday"/>
-                        <StringItem index="1" value="Monday"/>
-                        <StringItem index="2" value="Tuesday"/>
-                        <StringItem index="3" value="Wednesday"/>
-                        <StringItem index="4" value="Thursday"/>
-                        <StringItem index="5" value="Friday"/>
-                        <StringItem index="6" value="Saturday"/>
-                      </StringArray>
+                    <Property name="dateFormatString" type="java.lang.String" value="MM/yyyy"/>
+                  </Properties>
+                  <Events>
+                    <EventHandler event="propertyChange" listener="java.beans.PropertyChangeListener" parameters="java.beans.PropertyChangeEvent" handler="memberSinceDateBoxPropertyChange"/>
+                  </Events>
+                </Component>
+                <Component class="javax.swing.JComboBox" name="reviewCountComboBox">
+                  <Properties>
+                    <Property name="model" type="javax.swing.ComboBoxModel" editor="org.netbeans.modules.form.RADConnectionPropertyEditor">
+                      <Connection code="new javax.swing.DefaultComboBoxModel(new String[] {&quot;Select =,&gt;,&lt;&quot;, &quot;=&quot;, &quot;&gt;&quot;, &quot;&lt;&quot; })" type="code"/>
+                    </Property>
+                    <Property name="toolTipText" type="java.lang.String" value=""/>
+                  </Properties>
+                  <Events>
+                    <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="reviewCountComboBoxActionPerformed"/>
+                  </Events>
+                </Component>
+                <Component class="javax.swing.JTextField" name="reviewCountValueTextField">
+                  <Properties>
+                    <Property name="preferredSize" type="java.awt.Dimension" editor="org.netbeans.beaninfo.editors.DimensionEditor">
+                      <Dimension value="[78, 26]"/>
                     </Property>
                   </Properties>
                   <Events>
-                    <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="toComboBox1ActionPerformed"/>
+                    <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="reviewCountValueTextFieldActionPerformed"/>
+                    <EventHandler event="keyTyped" listener="java.awt.event.KeyListener" parameters="java.awt.event.KeyEvent" handler="reviewCountValueTextFieldKeyTyped"/>
                   </Events>
                 </Component>
-                <Component class="javax.swing.JComboBox" name="fromHourComboBox1">
-                  <Properties>
-                    <Property name="maximumRowCount" type="int" value="10"/>
-                    <Property name="model" type="javax.swing.ComboBoxModel" editor="org.netbeans.modules.form.editors2.ComboBoxModelEditor">
-                      <StringArray count="25">
-                        <StringItem index="0" value="00.00.00"/>
-                        <StringItem index="1" value="01.00.00"/>
-                        <StringItem index="2" value="02.00.00"/>
-                        <StringItem index="3" value="03.00.00"/>
-                        <StringItem index="4" value="04.00.00"/>
-                        <StringItem index="5" value="05.00.00"/>
-                        <StringItem index="6" value="06.00.00"/>
-                        <StringItem index="7" value="07.00.00"/>
-                        <StringItem index="8" value="08.00.00"/>
-                        <StringItem index="9" value="09.00.00"/>
-                        <StringItem index="10" value="10.00.00"/>
-                        <StringItem index="11" value="11.00.00"/>
-                        <StringItem index="12" value="12.00.00"/>
-                        <StringItem index="13" value="13.00.00"/>
-                        <StringItem index="14" value="14.00.00"/>
-                        <StringItem index="15" value="15.00.00"/>
-                        <StringItem index="16" value="16.00.00"/>
-                        <StringItem index="17" value="17.00.00"/>
-                        <StringItem index="18" value="18.00.00"/>
-                        <StringItem index="19" value="19.00.00"/>
-                        <StringItem index="20" value="20.00.00"/>
-                        <StringItem index="21" value="21.00.00"/>
-                        <StringItem index="22" value="22.00.00"/>
-                        <StringItem index="23" value="23.00.00"/>
-                        <StringItem index="24" value="24.00.00"/>
-                      </StringArray>
-                    </Property>
-                    <Property name="autoscrolls" type="boolean" value="true"/>
-                  </Properties>
-                </Component>
-                <Component class="javax.swing.JComboBox" name="toHourComboBox1">
-                  <Properties>
-                    <Property name="maximumRowCount" type="int" value="10"/>
-                    <Property name="model" type="javax.swing.ComboBoxModel" editor="org.netbeans.modules.form.editors2.ComboBoxModelEditor">
-                      <StringArray count="25">
-                        <StringItem index="0" value="00.00.00"/>
-                        <StringItem index="1" value="01.00.00"/>
-                        <StringItem index="2" value="02.00.00"/>
-                        <StringItem index="3" value="03.00.00"/>
-                        <StringItem index="4" value="04.00.00"/>
-                        <StringItem index="5" value="05.00.00"/>
-                        <StringItem index="6" value="06.00.00"/>
-                        <StringItem index="7" value="07.00.00"/>
-                        <StringItem index="8" value="08.00.00"/>
-                        <StringItem index="9" value="09.00.00"/>
-                        <StringItem index="10" value="10.00.00"/>
-                        <StringItem index="11" value="11.00.00"/>
-                        <StringItem index="12" value="12.00.00"/>
-                        <StringItem index="13" value="13.00.00"/>
-                        <StringItem index="14" value="14.00.00"/>
-                        <StringItem index="15" value="15.00.00"/>
-                        <StringItem index="16" value="16.00.00"/>
-                        <StringItem index="17" value="17.00.00"/>
-                        <StringItem index="18" value="18.00.00"/>
-                        <StringItem index="19" value="19.00.00"/>
-                        <StringItem index="20" value="20.00.00"/>
-                        <StringItem index="21" value="21.00.00"/>
-                        <StringItem index="22" value="22.00.00"/>
-                        <StringItem index="23" value="23.00.00"/>
-                        <StringItem index="24" value="24.00.00"/>
-                      </StringArray>
-                    </Property>
-                  </Properties>
-                </Component>
-                <Component class="javax.swing.JLabel" name="noCheckinLabel1">
+                <Component class="javax.swing.JLabel" name="toLabel2">
                   <Properties>
                     <Property name="background" type="java.awt.Color" editor="org.netbeans.beaninfo.editors.ColorEditor">
                       <Color blue="ff" green="ff" red="ff" type="rgb"/>
@@ -920,31 +880,94 @@
                     </Property>
                     <Property name="horizontalAlignment" type="int" value="0"/>
                     <Property name="labelFor" type="java.awt.Component" editor="org.netbeans.modules.form.ComponentChooserEditor">
-                      <ComponentRef name="fromComboBox"/>
+                      <ComponentRef name="toComboBox"/>
                     </Property>
-                    <Property name="text" type="java.lang.String" value="Number of Checkins:"/>
+                    <Property name="text" type="java.lang.String" value="Number of Friends"/>
                   </Properties>
                 </Component>
-                <Component class="javax.swing.JComboBox" name="checkinValueComboBox1">
+                <Component class="javax.swing.JComboBox" name="numberOfFriendsComboBox">
                   <Properties>
-                    <Property name="model" type="javax.swing.ComboBoxModel" editor="org.netbeans.modules.form.editors2.ComboBoxModelEditor">
-                      <StringArray count="3">
-                        <StringItem index="0" value="="/>
-                        <StringItem index="1" value="&gt;"/>
-                        <StringItem index="2" value="&lt;"/>
-                      </StringArray>
+                    <Property name="model" type="javax.swing.ComboBoxModel" editor="org.netbeans.modules.form.RADConnectionPropertyEditor">
+                      <Connection code="new javax.swing.DefaultComboBoxModel(new String[] {&quot;Select =,&gt;,&lt;&quot;, &quot;=&quot;, &quot;&gt;&quot;, &quot;&lt;&quot; })" type="code"/>
                     </Property>
                     <Property name="toolTipText" type="java.lang.String" value=""/>
                   </Properties>
+                  <Events>
+                    <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="numberOfFriendsComboBoxActionPerformed"/>
+                  </Events>
                 </Component>
-                <Component class="javax.swing.JTextField" name="checkinValueTextField1">
+                <Component class="javax.swing.JTextField" name="numberOfFriendsValueTextField">
                   <Properties>
                     <Property name="preferredSize" type="java.awt.Dimension" editor="org.netbeans.beaninfo.editors.DimensionEditor">
                       <Dimension value="[78, 26]"/>
                     </Property>
                   </Properties>
                   <Events>
-                    <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="checkinValueTextField1ActionPerformed"/>
+                    <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="numberOfFriendsValueTextFieldActionPerformed"/>
+                    <EventHandler event="keyTyped" listener="java.awt.event.KeyListener" parameters="java.awt.event.KeyEvent" handler="numberOfFriendsValueTextFieldKeyTyped"/>
+                  </Events>
+                </Component>
+                <Component class="javax.swing.JLabel" name="toLabel3">
+                  <Properties>
+                    <Property name="background" type="java.awt.Color" editor="org.netbeans.beaninfo.editors.ColorEditor">
+                      <Color blue="ff" green="ff" red="ff" type="rgb"/>
+                    </Property>
+                    <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
+                      <Font name="Comic Sans MS" size="16" style="0"/>
+                    </Property>
+                    <Property name="horizontalAlignment" type="int" value="0"/>
+                    <Property name="labelFor" type="java.awt.Component" editor="org.netbeans.modules.form.ComponentChooserEditor">
+                      <ComponentRef name="toComboBox"/>
+                    </Property>
+                    <Property name="text" type="java.lang.String" value="Avg Stars"/>
+                  </Properties>
+                </Component>
+                <Component class="javax.swing.JComboBox" name="andOrComboBox">
+                  <Properties>
+                    <Property name="model" type="javax.swing.ComboBoxModel" editor="org.netbeans.modules.form.RADConnectionPropertyEditor">
+                      <Connection code="new javax.swing.DefaultComboBoxModel(new String[] {&quot;AND,OR between attribute&quot;, &quot;AND&quot;, &quot;OR&quot; })" type="code"/>
+                    </Property>
+                    <Property name="toolTipText" type="java.lang.String" value=""/>
+                  </Properties>
+                  <Events>
+                    <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="andOrComboBoxActionPerformed"/>
+                  </Events>
+                </Component>
+                <Component class="javax.swing.JTextField" name="avgStarValueTextField">
+                  <Properties>
+                    <Property name="preferredSize" type="java.awt.Dimension" editor="org.netbeans.beaninfo.editors.DimensionEditor">
+                      <Dimension value="[78, 26]"/>
+                    </Property>
+                  </Properties>
+                  <Events>
+                    <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="avgStarValueTextFieldActionPerformed"/>
+                    <EventHandler event="keyTyped" listener="java.awt.event.KeyListener" parameters="java.awt.event.KeyEvent" handler="avgStarValueTextFieldKeyTyped"/>
+                  </Events>
+                </Component>
+                <Component class="javax.swing.JLabel" name="toLabel4">
+                  <Properties>
+                    <Property name="background" type="java.awt.Color" editor="org.netbeans.beaninfo.editors.ColorEditor">
+                      <Color blue="ff" green="ff" red="ff" type="rgb"/>
+                    </Property>
+                    <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
+                      <Font name="Comic Sans MS" size="16" style="0"/>
+                    </Property>
+                    <Property name="horizontalAlignment" type="int" value="0"/>
+                    <Property name="labelFor" type="java.awt.Component" editor="org.netbeans.modules.form.ComponentChooserEditor">
+                      <ComponentRef name="toComboBox"/>
+                    </Property>
+                    <Property name="text" type="java.lang.String" value="Select:"/>
+                  </Properties>
+                </Component>
+                <Component class="javax.swing.JComboBox" name="avgStarComboBox">
+                  <Properties>
+                    <Property name="model" type="javax.swing.ComboBoxModel" editor="org.netbeans.modules.form.RADConnectionPropertyEditor">
+                      <Connection code="new javax.swing.DefaultComboBoxModel(new String[] {&quot;Select =,&gt;,&lt;&quot;, &quot;=&quot;, &quot;&gt;&quot;, &quot;&lt;&quot; })" type="code"/>
+                    </Property>
+                    <Property name="toolTipText" type="java.lang.String" value=""/>
+                  </Properties>
+                  <Events>
+                    <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="avgStarComboBoxActionPerformed"/>
                   </Events>
                 </Component>
               </SubComponents>
@@ -968,7 +991,10 @@
                     </DimensionLayout>
                     <DimensionLayout dim="1">
                       <Group type="103" groupAlignment="0" attributes="0">
-                          <Component id="jScrollPane1" alignment="0" pref="326" max="32767" attributes="0"/>
+                          <Group type="102" alignment="0" attributes="0">
+                              <Component id="jScrollPane1" min="-2" pref="1259" max="-2" attributes="0"/>
+                              <EmptySpace min="0" pref="243" max="32767" attributes="0"/>
+                          </Group>
                       </Group>
                     </DimensionLayout>
                   </Layout>
@@ -1015,7 +1041,7 @@
                     </DimensionLayout>
                     <DimensionLayout dim="1">
                       <Group type="103" groupAlignment="0" attributes="0">
-                          <Component id="jScrollPane3" alignment="0" pref="326" max="32767" attributes="0"/>
+                          <Component id="jScrollPane3" alignment="0" pref="1502" max="32767" attributes="0"/>
                       </Group>
                     </DimensionLayout>
                   </Layout>
@@ -1070,12 +1096,12 @@
               <Layout>
                 <DimensionLayout dim="0">
                   <Group type="103" groupAlignment="0" attributes="0">
-                      <Component id="queryLabel" alignment="0" min="-2" pref="531" max="-2" attributes="0"/>
+                      <Component id="queryLabel" alignment="1" pref="749" max="32767" attributes="0"/>
                   </Group>
                 </DimensionLayout>
                 <DimensionLayout dim="1">
                   <Group type="103" groupAlignment="0" attributes="0">
-                      <Component id="queryLabel" alignment="1" pref="223" max="32767" attributes="0"/>
+                      <Component id="queryLabel" alignment="0" pref="247" max="32767" attributes="0"/>
                   </Group>
                 </DimensionLayout>
               </Layout>
@@ -1108,12 +1134,12 @@
               <Layout>
                 <DimensionLayout dim="0">
                   <Group type="103" groupAlignment="0" attributes="0">
-                      <Component id="jLabel2" alignment="0" pref="539" max="32767" attributes="0"/>
+                      <Component id="jLabel2" alignment="0" max="32767" attributes="0"/>
                   </Group>
                 </DimensionLayout>
                 <DimensionLayout dim="1">
                   <Group type="103" groupAlignment="0" attributes="0">
-                      <Component id="jLabel2" alignment="0" max="32767" attributes="0"/>
+                      <Component id="jLabel2" alignment="0" pref="52" max="32767" attributes="0"/>
                   </Group>
                 </DimensionLayout>
               </Layout>
@@ -1139,6 +1165,56 @@
               <Events>
                 <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="executeQueryButtonActionPerformed"/>
               </Events>
+            </Component>
+            <Container class="javax.swing.JPanel" name="jPanel3">
+              <Properties>
+                <Property name="background" type="java.awt.Color" editor="org.netbeans.beaninfo.editors.ColorEditor">
+                  <Color blue="99" green="ff" red="ff" type="rgb"/>
+                </Property>
+                <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
+                  <Font name="Comic Sans MS" size="18" style="0"/>
+                </Property>
+              </Properties>
+
+              <Layout>
+                <DimensionLayout dim="0">
+                  <Group type="103" groupAlignment="0" attributes="0">
+                      <Component id="jLabel1" alignment="0" pref="546" max="32767" attributes="0"/>
+                  </Group>
+                </DimensionLayout>
+                <DimensionLayout dim="1">
+                  <Group type="103" groupAlignment="0" attributes="0">
+                      <Component id="jLabel1" alignment="0" max="32767" attributes="0"/>
+                  </Group>
+                </DimensionLayout>
+              </Layout>
+              <SubComponents>
+                <Component class="javax.swing.JLabel" name="jLabel1">
+                  <Properties>
+                    <Property name="background" type="java.awt.Color" editor="org.netbeans.beaninfo.editors.ColorEditor">
+                      <Color blue="99" green="ff" red="ff" type="rgb"/>
+                    </Property>
+                    <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
+                      <Font name="Comic Sans MS" size="18" style="0"/>
+                    </Property>
+                    <Property name="horizontalAlignment" type="int" value="0"/>
+                    <Property name="text" type="java.lang.String" value="Business"/>
+                  </Properties>
+                </Component>
+              </SubComponents>
+            </Container>
+            <Component class="javax.swing.JRadioButton" name="jRadioButton1">
+              <Properties>
+                <Property name="text" type="java.lang.String" value="Business"/>
+              </Properties>
+              <Events>
+                <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="jRadioButton1ActionPerformed"/>
+              </Events>
+            </Component>
+            <Component class="javax.swing.JRadioButton" name="jRadioButton2">
+              <Properties>
+                <Property name="text" type="java.lang.String" value="User"/>
+              </Properties>
             </Component>
           </SubComponents>
         </Container>

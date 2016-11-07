@@ -7,6 +7,7 @@ import java.io.*;
 import java.sql.SQLException;
 import java.text.ParseException;
 import review.reviewFetch;
+import user.userFetch;
 
 
 /*
@@ -26,5 +27,6 @@ public class populate {
 //       checkinFetch.checkinTable();
 //       jdbcConnection.query();
 //       reviewFetch.reviewTable();
+        userFetch.userTable();
     }
 }
