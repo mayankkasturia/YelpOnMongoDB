@@ -5,7 +5,7 @@
  */
 package user;
 
-import DataLoading.jdbcConnection;
+import DataLoading.createDrop;
 import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
@@ -106,7 +106,7 @@ public class userFetch {
 
             
             }catch (ClassNotFoundException ex) {
-            Logger.getLogger(jdbcConnection.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(createDrop.class.getName()).log(Level.SEVERE, null, ex);
         }
                 
                 

@@ -13,7 +13,7 @@ import java.util.logging.Logger;
  *
  * @author Mayankkasturia
  */
-public class jdbcConnection {
+public class createDrop {
 
     public static void query() throws SQLException {
         String url="jdbc:oracle:thin:@localhost:1523:orcl123";
@@ -78,7 +78,7 @@ public class jdbcConnection {
             con.close();
 
         } catch (ClassNotFoundException ex) {
-            Logger.getLogger(jdbcConnection.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(createDrop.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
 }

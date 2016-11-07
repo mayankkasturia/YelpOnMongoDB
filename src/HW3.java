@@ -1033,7 +1033,7 @@ public class HW3 extends javax.swing.JFrame {
         queryLabel.setFont(new java.awt.Font("Comic Sans MS", 0, 18)); // NOI18N
         queryLabel.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
         queryLabel.setLabelFor(executeQueryButton);
-        queryLabel.setText("mk");
+        queryLabel.setText("");
         queryLabel.setVerticalAlignment(javax.swing.SwingConstants.TOP);
 
         javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
@@ -1592,6 +1592,7 @@ public class HW3 extends javax.swing.JFrame {
         } // end sub category else if
         else if(!memberSince.isEmpty() || !operReviewCount.isEmpty() || !operNoOfFriends.isEmpty() || !operAvgStar.isEmpty()
                         || !valueReviewCount.isEmpty() || !valueNoOfFriends.isEmpty() || !valueAvgStar.isEmpty() || !andOrAttribute.isEmpty()){
+                Double doubleValueAvgStar=Double.parseDouble(valueAvgStar);
             try {
                 Class.forName("oracle.jdbc.driver.OracleDriver");
             } catch (ClassNotFoundException ex) {
@@ -1639,11 +1640,11 @@ public class HW3 extends javax.swing.JFrame {
                   if(!valueAvgStar.isEmpty())
                 {
                     if(andflag){
-                     userQuery.append("AND AVG_STARS"+operAvgStar+"'"+valueAvgStar+"'");
+                     userQuery.append("AND AVG_STARS"+operAvgStar+"'"+doubleValueAvgStar+"'");
                     }
                     else {
                         andflag=true;
-                         userQuery.append("AVG_STARS"+operAvgStar+"'"+valueAvgStar+"'");
+                         userQuery.append("AVG_STARS"+operAvgStar+"'"+doubleValueAvgStar+"'");
                     }
                
                 }
@@ -1719,11 +1720,11 @@ public class HW3 extends javax.swing.JFrame {
                   if(!valueAvgStar.isEmpty())
                 {
                     if(andflag){
-                     userQuery.append("OR AVG_STARS"+operAvgStar+"'"+valueAvgStar+"'");
+                     userQuery.append("OR AVG_STARS"+operAvgStar+"'"+doubleValueAvgStar+"'");
                     }
                     else {
                         andflag=true;
-                         userQuery.append("AVG_STARS"+operAvgStar+"'"+valueAvgStar+"'");
+                         userQuery.append("AVG_STARS"+operAvgStar+"'"+doubleValueAvgStar+"'");
                     }
                
                 }
@@ -1825,12 +1826,12 @@ public class HW3 extends javax.swing.JFrame {
     }//GEN-LAST:event_avgStarValueTextFieldActionPerformed
 
     private void avgStarValueTextFieldKeyTyped(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_avgStarValueTextFieldKeyTyped
-        char c = evt.getKeyChar();
-        if (!(Character.isDigit(c) || (c == KeyEvent.VK_BACK_SPACE) || (c == KeyEvent.VK_DELETE))) {
-            getToolkit().beep();
-            evt.consume();
-
-        }
+//        char c = evt.getKeyChar();
+//        if (!(Character.isDigit(c) || (c == KeyEvent.VK_BACK_SPACE) || (c == KeyEvent.VK_DELETE))) {
+//            getToolkit().beep();
+//            evt.consume();
+//
+//        }
     }//GEN-LAST:event_avgStarValueTextFieldKeyTyped
 
     private void avgStarComboBoxActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_avgStarComboBoxActionPerformed

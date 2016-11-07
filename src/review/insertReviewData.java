@@ -5,7 +5,7 @@
  */
 package review;
 
-import DataLoading.jdbcConnection;
+import DataLoading.createDrop;
 import java.io.IOException;
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -55,7 +55,7 @@ public class insertReviewData {
 
             
             }catch (ClassNotFoundException ex) {
-            Logger.getLogger(jdbcConnection.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(createDrop.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
     

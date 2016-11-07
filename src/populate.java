@@ -1,6 +1,6 @@
 
 
-import DataLoading.jdbcConnection;
+import DataLoading.createDrop;
 import business.businessFetch;
 import checkin.checkinFetch;
 import java.io.*;
@@ -23,10 +23,10 @@ public class populate {
 
     public static void main(String[] args) throws SQLException, IOException, FileNotFoundException, ClassNotFoundException, ParseException {
 
+//       createDrop.query();
 //       businessFetch.businessTable();
 //       checkinFetch.checkinTable();
-//       jdbcConnection.query();
 //       reviewFetch.reviewTable();
- //       userFetch.userTable();
+//       userFetch.userTable();
     }
 }
