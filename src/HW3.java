@@ -1,9 +1,16 @@
 
+import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
+import java.awt.Dialog;
+import java.awt.Dimension;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.Reader;
+import java.sql.Clob;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
@@ -19,13 +26,18 @@ import java.util.logging.Logger;
 import javax.swing.DefaultListModel;
 import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
+import javax.swing.JDialog;
 import javax.swing.JList;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.JTable;
 import javax.swing.JTextField;
 import javax.swing.ListCellRenderer;
 import javax.swing.ListSelectionModel;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import javax.swing.table.DefaultTableModel;
+import oracle.sql.CLOB;
 
 /*
  * To change this license header, choose License Headers in Project Properties.
@@ -61,6 +73,7 @@ public class HW3 extends javax.swing.JFrame {
     public static String fromReview;
     public static String toReview;
     public static String updatedQuery;
+    public JDialog mydialog;
 
     /**
      * Creates new form dbGui
@@ -159,8 +172,71 @@ public class HW3 extends javax.swing.JFrame {
 
         });
         fromReview = ((JTextField) fromReviewDate.getDateEditor().getUiComponent()).getText();
-        System.out.println(fromReview);
+        //System.out.println(fromReview);
+        resultTable.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+              
+                try {
+                    Class.forName("oracle.jdbc.driver.OracleDriver");
+                } catch (ClassNotFoundException ex) {
+                    Logger.getLogger(HW3.class.getName()).log(Level.SEVERE, null, ex);
+                }
+                try {
+                    stm = con.createStatement();
+                } catch (SQLException ex) {
+                    Logger.getLogger(HW3.class.getName()).log(Level.SEVERE, null, ex);
+                }
 
+                int row = resultTable.rowAtPoint(evt.getPoint());
+                int col = resultTable.columnAtPoint(evt.getPoint());
+                if (row >= 0 && col == 0) {
+                    String tableValue = resultTable.getValueAt(row, col).toString();
+
+                    JTable im = new JTable();
+                    DefaultTableModel reviewModel = new DefaultTableModel(0, 0);
+                    im.setModel(reviewModel);
+//        String header[] = new String[]{"Review"};
+//        reviewModel.setColumnIdentifiers(header);
+                    reviewModel.addColumn("Review");
+                    im.setRowHeight(50);
+      
+                    try {
+                        String reviewQuery = "SELECT RE.Review from B_REVIEW RE,B_INFO INF "
+                                + "WHERE INF.B_ID= RE.B_ID AND INF.NAME='" + tableValue + "'";
+                        System.out.println(reviewQuery);
+                        ResultSet result = stm.executeQuery(reviewQuery);
+                        Clob myclob = null;
+                        while (result.next()) {
+                            Object[] rowReview = new Object[result.getMetaData().getColumnCount()];
+                            for (int i = 0; i < rowReview.length; i++) {
+                                myclob = (Clob) result.getClob(i + 1);
+                                System.out.println(clobToString(myclob));
+                                rowReview[i] = clobToString(myclob);
+                                
+                            }
+                            reviewModel.addRow(rowReview);
+
+                        }
+                    } catch (SQLException ex) {
+                        Logger.getLogger(HW3.class.getName()).log(Level.SEVERE, null, ex);
+                    } catch (IOException ex) {
+                        Logger.getLogger(HW3.class.getName()).log(Level.SEVERE, null, ex);
+                    }
+
+                    mydialog = new JDialog();
+                    mydialog.setSize(new Dimension(1000, 1000));
+                    mydialog.setTitle("Reviews By User");
+                    mydialog.setModalityType(Dialog.ModalityType.APPLICATION_MODAL); // prevent user from doing something else
+                    mydialog.add(im);
+                    mydialog.setVisible(true);
+                    mydialog.setResizable(true);
+
+//                    JOptionPane.showConfirmDialog(null,
+//                        getPanel(tableValue));
+                }
+            }
+        });
     }
 
     /**
@@ -1255,7 +1331,7 @@ public class HW3 extends javax.swing.JFrame {
 
 
     }//GEN-LAST:event_executeQueryButtonActionPerformed
-
+    
     /**
      * @param args the command line arguments
      */
@@ -1541,7 +1617,24 @@ public class HW3 extends javax.swing.JFrame {
         }
         return difference;
     }//checkForDay
+private String clobToString(Clob data) throws IOException {
+    StringBuilder sb = new StringBuilder();
+    try {
+        Reader reader = data.getCharacterStream();
+        BufferedReader br = new BufferedReader(reader);
 
+        String line;
+        while(null != (line = br.readLine())) {
+            sb.append(line);
+        }
+        br.close();
+    } catch (SQLException e) {
+        // handle this exception
+    } catch (IOException e) {
+        // handle this exception
+    }
+    return sb.toString();
+}
 }//class hw3
 
 class CheckboxListItem {
