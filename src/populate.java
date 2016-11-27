@@ -23,10 +23,10 @@ public class populate {
 
     public static void main(String[] args) throws SQLException, IOException, FileNotFoundException, ClassNotFoundException, ParseException {
 
-//       createDrop.query();
-//       businessFetch.businessTable();
-//       checkinFetch.checkinTable();
-//       reviewFetch.reviewTable();
-//       userFetch.userTable();
+       createDrop.query();
+       businessFetch.businessTable();
+       checkinFetch.checkinTable();
+       reviewFetch.reviewTable();
+       userFetch.userTable();
     }
 }
