@@ -1,6 +1,12 @@
 
-import java.awt.BorderLayout;
-import java.awt.Color;
+import com.mongodb.AggregationOutput;
+import com.mongodb.BasicDBList;
+import com.mongodb.BasicDBObject;
+import com.mongodb.DB;
+import com.mongodb.DBCollection;
+import com.mongodb.DBCursor;
+import com.mongodb.DBObject;
+import com.mongodb.MongoClient;
 import java.awt.Component;
 import java.awt.Dialog;
 import java.awt.Dimension;
@@ -10,6 +16,7 @@ import java.awt.event.MouseEvent;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.Reader;
+import static java.lang.Double.parseDouble;
 import java.sql.Clob;
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -17,7 +24,15 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.text.DateFormat;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.DefaultListModel;
@@ -33,6 +48,7 @@ import javax.swing.ListSelectionModel;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import javax.swing.table.DefaultTableModel;
+import org.bson.Document;
 
 
 /*
@@ -44,7 +60,7 @@ import javax.swing.table.DefaultTableModel;
  *
  * @author Mayankkasturia
  */
-public class HW3 extends javax.swing.JFrame {
+public class HW4 extends javax.swing.JFrame {
 
     private static String url;
     private static String uname;
@@ -55,6 +71,7 @@ public class HW3 extends javax.swing.JFrame {
     private static PreparedStatement preparedStatement = null;
 
     public static ArrayList<String> finalCat;
+//    public static ArrayList<CheckinDetail> checkinList;
     public static ArrayList<String> finalCat1;
     public static String fromCheckin;
     public static String fromCheckinHour;
@@ -78,12 +95,14 @@ public class HW3 extends javax.swing.JFrame {
     public static String valueNoOfFriends;
     public static String valueAvgStar;
     public static String andOrAttribute;
-    
+    public MongoClient mongoClient;
+
     public static DefaultListModel<CheckboxListItem> model;
+
     /**
      * Creates new form dbGui
      */
-    public HW3() throws SQLException {
+    public HW4() throws SQLException {
         initComponents();
         url = "jdbc:oracle:thin:@localhost:1523:orcl123";
         uname = "sys as sysdba";
@@ -112,7 +131,8 @@ public class HW3 extends javax.swing.JFrame {
         valueNoOfFriends = "";
         valueAvgStar = "";
         andOrAttribute = "";
-        
+//        checkinList = new ArrayList<CheckinDetail>();
+        mongoClient = new MongoClient("localhost", 27017);
         memberSinceDateBox.setEnabled(false);
         reviewCountComboBox.setEnabled(false);
         reviewCountValueTextField.setEnabled(false);
@@ -193,7 +213,7 @@ public class HW3 extends javax.swing.JFrame {
             }
 
         });
-                reviewCountValueTextField.getDocument().addDocumentListener(new DocumentListener() {
+        reviewCountValueTextField.getDocument().addDocumentListener(new DocumentListener() {
 
             @Override
             public void insertUpdate(DocumentEvent e) {
@@ -216,8 +236,8 @@ public class HW3 extends javax.swing.JFrame {
             }
 
         });
-                
-           numberOfFriendsValueTextField.getDocument().addDocumentListener(new DocumentListener() {
+
+        numberOfFriendsValueTextField.getDocument().addDocumentListener(new DocumentListener() {
 
             @Override
             public void insertUpdate(DocumentEvent e) {
@@ -239,9 +259,9 @@ public class HW3 extends javax.swing.JFrame {
                 //System.out.println(valueCheckin);
             }
 
-        });  
-           
-            avgStarValueTextField.getDocument().addDocumentListener(new DocumentListener() {
+        });
+
+        avgStarValueTextField.getDocument().addDocumentListener(new DocumentListener() {
 
             @Override
             public void insertUpdate(DocumentEvent e) {
@@ -263,140 +283,137 @@ public class HW3 extends javax.swing.JFrame {
                 //System.out.println(valueCheckin);
             }
 
-        });  
-        
+        });
+
         //fromReview = ((JTextField) fromReviewDate.getDateEditor().getUiComponent()).getText();
         //System.out.println(fromReview);
         resultTable.addMouseListener(new java.awt.event.MouseAdapter() {
             @Override
             public void mouseClicked(java.awt.event.MouseEvent evt) {
-              
+
                 try {
                     Class.forName("oracle.jdbc.driver.OracleDriver");
                 } catch (ClassNotFoundException ex) {
-                    Logger.getLogger(HW3.class.getName()).log(Level.SEVERE, null, ex);
+                    Logger.getLogger(HW4.class.getName()).log(Level.SEVERE, null, ex);
                 }
                 try {
                     stm = con.createStatement();
                 } catch (SQLException ex) {
-                    Logger.getLogger(HW3.class.getName()).log(Level.SEVERE, null, ex);
+                    Logger.getLogger(HW4.class.getName()).log(Level.SEVERE, null, ex);
                 }
                 int row = resultTable.rowAtPoint(evt.getPoint());
                 int col = resultTable.columnAtPoint(evt.getPoint());
-                
-                
-                if(!memberSince.isEmpty() || !operReviewCount.isEmpty() || !operNoOfFriends.isEmpty() || !operAvgStar.isEmpty()
-                        || !valueReviewCount.isEmpty() || !valueNoOfFriends.isEmpty() || !valueAvgStar.isEmpty() || !andOrAttribute.isEmpty()){
-               
+
+                if (!memberSince.isEmpty() || !operReviewCount.isEmpty() || !operNoOfFriends.isEmpty() || !operAvgStar.isEmpty()
+                        || !valueReviewCount.isEmpty() || !valueNoOfFriends.isEmpty() || !valueAvgStar.isEmpty() || !andOrAttribute.isEmpty()) {
+
                     if (row >= 0 && col == 0) {
-                    String tableValue = resultTable.getValueAt(row, col).toString();
-                    
-                    if(tableValue.contains("'")){
-                    String[] split1 = tableValue.split("'");
-                    tableValue=split1[0];
-                    
-                    }
+                        String tableValue = resultTable.getValueAt(row, col).toString();
 
-                    JTable im = new JTable();
-                    DefaultTableModel reviewModel = new DefaultTableModel(0, 0);
-                    im.setModel(reviewModel);
+                        if (tableValue.contains("'")) {
+                            String[] split1 = tableValue.split("'");
+                            tableValue = split1[0];
+
+                        }
+
+                        JTable im = new JTable();
+                        DefaultTableModel reviewModel = new DefaultTableModel(0, 0);
+                        im.setModel(reviewModel);
 //        String header[] = new String[]{"Review"};
 //        reviewModel.setColumnIdentifiers(header);
-                    reviewModel.addColumn("Review");
-                    im.setRowHeight(50);
-      
-                    try {
-                        String reviewQuery = "SELECT RE.Review from B_REVIEW RE,B_USER US \n"
-                                + "WHERE US.U_ID= RE.U_ID AND US.USER_NAME LIKE '%" + tableValue + "%'";
-                        System.out.println(reviewQuery);
-                        //System.out.println(reviewQuery);
-                        ResultSet result = stm.executeQuery(reviewQuery);
-                    
-                        Clob myclob = null;
-                        while (result.next()) {
-                            Object[] rowReview = new Object[result.getMetaData().getColumnCount()];
-                            System.out.println(result.getMetaData().getColumnCount());
-                            for (int i = 0; i < rowReview.length; i++) {
-                                myclob = (Clob) result.getClob(i + 1);
-                                //System.out.println(clobToString(myclob));
-                                rowReview[i] = clobToString(myclob);
-                                
+                        reviewModel.addColumn("Review");
+                        im.setRowHeight(50);
+
+                        try {
+                            String reviewQuery = "SELECT RE.Review from B_REVIEW RE,B_USER US \n"
+                                    + "WHERE US.U_ID= RE.U_ID AND US.USER_NAME LIKE '%" + tableValue + "%'";
+                            System.out.println(reviewQuery);
+                            //System.out.println(reviewQuery);
+                            ResultSet result = stm.executeQuery(reviewQuery);
+
+                            Clob myclob = null;
+                            while (result.next()) {
+                                Object[] rowReview = new Object[result.getMetaData().getColumnCount()];
+                                System.out.println(result.getMetaData().getColumnCount());
+                                for (int i = 0; i < rowReview.length; i++) {
+                                    myclob = (Clob) result.getClob(i + 1);
+                                    //System.out.println(clobToString(myclob));
+                                    rowReview[i] = clobToString(myclob);
+
+                                }
+                                reviewModel.addRow(rowReview);
+
                             }
-                            reviewModel.addRow(rowReview);
-
-                        }
-                    } catch (SQLException ex) {
-                        Logger.getLogger(HW3.class.getName()).log(Level.SEVERE, null, ex);
-                    }   catch (IOException ex) {
-                            Logger.getLogger(HW3.class.getName()).log(Level.SEVERE, null, ex);
+                        } catch (SQLException ex) {
+                            Logger.getLogger(HW4.class.getName()).log(Level.SEVERE, null, ex);
+                        } catch (IOException ex) {
+                            Logger.getLogger(HW4.class.getName()).log(Level.SEVERE, null, ex);
                         }
 
-                    mydialog = new JDialog();
-                    mydialog.setSize(new Dimension(1000, 1000));
-                    mydialog.setTitle("Reviews By User");
-                    mydialog.setModalityType(Dialog.ModalityType.APPLICATION_MODAL); // prevent user from doing something else
-                    mydialog.add(im);
-                    mydialog.setVisible(true);
-                    mydialog.setResizable(true);
-                    
+                        mydialog = new JDialog();
+                        mydialog.setSize(new Dimension(1000, 1000));
+                        mydialog.setTitle("Reviews By User");
+                        mydialog.setModalityType(Dialog.ModalityType.APPLICATION_MODAL); // prevent user from doing something else
+                        mydialog.add(im);
+                        mydialog.setVisible(true);
+                        mydialog.setResizable(true);
 
 //                    JOptionPane.showConfirmDialog(null,
 //                        getPanel(tableValue));
-                }
-                
-                
-                }
-                else{
-                
-                if (row >= 0 && col == 0) {
-                    String tableValue = resultTable.getValueAt(row, col).toString();
-                    if(tableValue.contains("'")){
-                    String[] split1 = tableValue.split("'");
-                    tableValue=split1[0];
-                    
                     }
-                    JTable im = new JTable();
-                    DefaultTableModel reviewModel = new DefaultTableModel(0, 0);
-                    im.setModel(reviewModel);
-//        String header[] = new String[]{"Review"};
-//        reviewModel.setColumnIdentifiers(header);
-                    reviewModel.addColumn("Review");
-                    im.setRowHeight(50);
-      
-                    try {
-                        String reviewQuery = "SELECT RE.Review from B_REVIEW RE,B_INFO INF "
-                                + "WHERE INF.B_ID= RE.B_ID AND INF.NAME Like '%" + tableValue + "%'";
-                        //System.out.println(reviewQuery);
-                        ResultSet result = stm.executeQuery(reviewQuery);
-                        Clob myclob = null;
-                        while (result.next()) {
-                            Object[] rowReview = new Object[result.getMetaData().getColumnCount()];
-                            for (int i = 0; i < rowReview.length; i++) {
-                                myclob = (Clob) result.getClob(i + 1);
-                                //System.out.println(clobToString(myclob));
-                                rowReview[i] = clobToString(myclob);
-                                
-                            }
-                            reviewModel.addRow(rowReview);
+
+                } else {
+
+                    if (row >= 0 && col == 0) {
+                        String tableValue = resultTable.getValueAt(row, col).toString();
+                        if (tableValue.contains("'")) {
+                            String[] split1 = tableValue.split("'");
+                            tableValue = split1[0];
 
                         }
-                    } catch (SQLException ex) {
-                        Logger.getLogger(HW3.class.getName()).log(Level.SEVERE, null, ex);
-                    } catch (IOException ex) {
-                        Logger.getLogger(HW3.class.getName()).log(Level.SEVERE, null, ex);
-                    }
+                        JTable im = new JTable();
+                        DefaultTableModel reviewModel = new DefaultTableModel(0, 0);
+                        im.setModel(reviewModel);
+//        String header[] = new String[]{"Review"};
+//        reviewModel.setColumnIdentifiers(header);
+                        reviewModel.addColumn("Review");
+                        im.setRowHeight(50);
 
-                    mydialog = new JDialog();
-                    mydialog.setSize(new Dimension(1000, 1000));
-                    mydialog.setTitle("Reviews By User");
-                    mydialog.setModalityType(Dialog.ModalityType.APPLICATION_MODAL); // prevent user from doing something else
-                    mydialog.add(im);
-                    mydialog.setVisible(true);
-                    mydialog.setResizable(true);
+                        try {
+                            String reviewQuery = "SELECT RE.Review from B_REVIEW RE,B_INFO INF "
+                                    + "WHERE INF.B_ID= RE.B_ID AND INF.NAME Like '%" + tableValue + "%'";
+                            //System.out.println(reviewQuery);
+                            ResultSet result = stm.executeQuery(reviewQuery);
+                            Clob myclob = null;
+                            while (result.next()) {
+                                Object[] rowReview = new Object[result.getMetaData().getColumnCount()];
+                                for (int i = 0; i < rowReview.length; i++) {
+                                    myclob = (Clob) result.getClob(i + 1);
+                                    //System.out.println(clobToString(myclob));
+                                    rowReview[i] = clobToString(myclob);
+
+                                }
+                                reviewModel.addRow(rowReview);
+
+                            }
+                        } catch (SQLException ex) {
+                            Logger.getLogger(HW4.class.getName()).log(Level.SEVERE, null, ex);
+                        } catch (IOException ex) {
+                            Logger.getLogger(HW4.class.getName()).log(Level.SEVERE, null, ex);
+                        }
+
+                        mydialog = new JDialog();
+                        mydialog.setSize(new Dimension(1000, 1000));
+                        mydialog.setTitle("Reviews By User");
+                        mydialog.setModalityType(Dialog.ModalityType.APPLICATION_MODAL); // prevent user from doing something else
+                        mydialog.add(im);
+                        mydialog.setVisible(true);
+                        mydialog.setResizable(true);
 
 //                    JOptionPane.showConfirmDialog(null,
 //                        getPanel(tableValue));
-                }}
+                    }
+                }
             }
         });
     }
@@ -420,7 +437,6 @@ public class HW3 extends javax.swing.JFrame {
         dbCategory = new javax.swing.JPanel();
         checkinLabel = new javax.swing.JLabel();
         categoryLabel = new javax.swing.JLabel();
-        subCategoryLabel = new javax.swing.JLabel();
         checkinPanel = new javax.swing.JPanel();
         fromLabel = new javax.swing.JLabel();
         fromComboBox = new javax.swing.JComboBox();
@@ -465,10 +481,6 @@ public class HW3 extends javax.swing.JFrame {
         categoryPanel = new javax.swing.JPanel();
         jScrollPane1 = new javax.swing.JScrollPane();
         jList1 = new javax.swing.JList();
-        jScrollPane5 = new javax.swing.JScrollPane();
-        subCategoryPanel = new javax.swing.JPanel();
-        jScrollPane3 = new javax.swing.JScrollPane();
-        jList2 = new javax.swing.JList();
         jScrollPane8 = new javax.swing.JScrollPane();
         resultTable = new javax.swing.JTable();
         jPanel1 = new javax.swing.JPanel();
@@ -478,6 +490,13 @@ public class HW3 extends javax.swing.JFrame {
         executeQueryButton = new javax.swing.JButton();
         jPanel3 = new javax.swing.JPanel();
         jButton1 = new javax.swing.JButton();
+        jPanel4 = new javax.swing.JPanel();
+        noCheckinLabel1 = new javax.swing.JLabel();
+        noCheckinLabel2 = new javax.swing.JLabel();
+        noCheckinLabel3 = new javax.swing.JLabel();
+        fromComboBox1 = new javax.swing.JComboBox();
+        fromComboBox2 = new javax.swing.JComboBox();
+        fromComboBox3 = new javax.swing.JComboBox();
 
         javax.swing.GroupLayout jFrame1Layout = new javax.swing.GroupLayout(jFrame1.getContentPane());
         jFrame1.getContentPane().setLayout(jFrame1Layout);
@@ -515,11 +534,6 @@ public class HW3 extends javax.swing.JFrame {
         categoryLabel.setFont(new java.awt.Font("Comic Sans MS", 0, 18)); // NOI18N
         categoryLabel.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
         categoryLabel.setText("Category");
-
-        subCategoryLabel.setBackground(new java.awt.Color(255, 255, 255));
-        subCategoryLabel.setFont(new java.awt.Font("Comic Sans MS", 0, 18)); // NOI18N
-        subCategoryLabel.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
-        subCategoryLabel.setText("SubCategory");
 
         checkinPanel.setBackground(new java.awt.Color(255, 255, 255));
         checkinPanel.setAutoscrolls(true);
@@ -559,7 +573,7 @@ public class HW3 extends javax.swing.JFrame {
         });
 
         fromHourComboBox.setMaximumRowCount(10);
-        fromHourComboBox.setModel(new javax.swing.DefaultComboBoxModel(new String[] {"Time","00.00.00", "01.00.00", "02.00.00", "03.00.00", "04.00.00", "05.00.00", "06.00.00", "07.00.00", "08.00.00", "09.00.00", "10.00.00", "11.00.00", "12.00.00", "13.00.00", "14.00.00", "15.00.00", "16.00.00", "17.00.00", "18.00.00", "19.00.00", "20.00.00", "21.00.00", "22.00.00", "23.00.00", "24.00.00" }));
+        fromHourComboBox.setModel(new javax.swing.DefaultComboBoxModel(new String[] {"Time","0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20", "21", "22", "23", "24" }));
         fromHourComboBox.setAutoscrolls(true);
         fromHourComboBox.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -568,7 +582,7 @@ public class HW3 extends javax.swing.JFrame {
         });
 
         toHourComboBox.setMaximumRowCount(10);
-        toHourComboBox.setModel(new javax.swing.DefaultComboBoxModel(new String[] {"Time", "00.00.00", "01.00.00", "02.00.00", "03.00.00", "04.00.00", "05.00.00", "06.00.00", "07.00.00", "08.00.00", "09.00.00", "10.00.00", "11.00.00", "12.00.00", "13.00.00", "14.00.00", "15.00.00", "16.00.00", "17.00.00", "18.00.00", "19.00.00", "20.00.00", "21.00.00", "22.00.00", "23.00.00", "24.00.00" }));
+        toHourComboBox.setModel(new javax.swing.DefaultComboBoxModel(new String[] {"Time","0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20", "21", "22", "23", "24" }));
         toHourComboBox.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 toHourComboBoxActionPerformed(evt);
@@ -649,7 +663,7 @@ public class HW3 extends javax.swing.JFrame {
                 .addGroup(checkinPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(checkinValueTextField, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(checkinValueComboBox, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addContainerGap(264, Short.MAX_VALUE))
+                .addContainerGap(182, Short.MAX_VALUE))
         );
 
         jLabel4.setBackground(new java.awt.Color(255, 255, 255));
@@ -732,7 +746,7 @@ public class HW3 extends javax.swing.JFrame {
             }
         });
 
-        fromReviewDate.setDateFormatString("MM/dd/yy");
+        fromReviewDate.setDateFormatString("yyyy-MM-dd");
         fromReviewDate.setName("");
         fromReviewDate.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent evt) {
@@ -745,7 +759,7 @@ public class HW3 extends javax.swing.JFrame {
             }
         });
 
-        toReviewDate.setDateFormatString("MM/dd/yy");
+        toReviewDate.setDateFormatString("yyyy-MM-dd");
         toReviewDate.addPropertyChangeListener(new java.beans.PropertyChangeListener() {
             public void propertyChange(java.beans.PropertyChangeEvent evt) {
                 toReviewDatePropertyChange(evt);
@@ -816,7 +830,7 @@ public class HW3 extends javax.swing.JFrame {
                 .addGroup(reviewPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(votesValueLabel)
                     .addComponent(votesValueTextField, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addContainerGap(240, Short.MAX_VALUE))
+                .addContainerGap(158, Short.MAX_VALUE))
         );
 
         jLabel5.setBackground(new java.awt.Color(255, 255, 255));
@@ -968,7 +982,7 @@ public class HW3 extends javax.swing.JFrame {
                                     .addComponent(numberOfFriendsValueTextField, javax.swing.GroupLayout.PREFERRED_SIZE, 76, javax.swing.GroupLayout.PREFERRED_SIZE)
                                     .addComponent(reviewCountValueTextField, javax.swing.GroupLayout.PREFERRED_SIZE, 76, javax.swing.GroupLayout.PREFERRED_SIZE)))
                             .addComponent(andOrComboBox, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))))
-                .addContainerGap(92, Short.MAX_VALUE))
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
         checkinPanel1Layout.setVerticalGroup(
             checkinPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -1009,35 +1023,18 @@ public class HW3 extends javax.swing.JFrame {
         categoryPanel.setLayout(categoryPanelLayout);
         categoryPanelLayout.setHorizontalGroup(
             categoryPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 245, Short.MAX_VALUE)
+            .addGroup(categoryPanelLayout.createSequentialGroup()
+                .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 246, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(0, 118, Short.MAX_VALUE))
         );
         categoryPanelLayout.setVerticalGroup(
             categoryPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(categoryPanelLayout.createSequentialGroup()
-                .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 1259, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(0, 243, Short.MAX_VALUE))
+                .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 541, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(0, 961, Short.MAX_VALUE))
         );
 
         jScrollPane2.setViewportView(categoryPanel);
-
-        subCategoryPanel.setBackground(new java.awt.Color(255, 255, 255));
-
-        DefaultListModel<String> listModel2 = new DefaultListModel<String>();
-        jList2.setModel(listModel2);
-        jScrollPane3.setViewportView(jList2);
-
-        javax.swing.GroupLayout subCategoryPanelLayout = new javax.swing.GroupLayout(subCategoryPanel);
-        subCategoryPanel.setLayout(subCategoryPanelLayout);
-        subCategoryPanelLayout.setHorizontalGroup(
-            subCategoryPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(jScrollPane3, javax.swing.GroupLayout.DEFAULT_SIZE, 285, Short.MAX_VALUE)
-        );
-        subCategoryPanelLayout.setVerticalGroup(
-            subCategoryPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(jScrollPane3, javax.swing.GroupLayout.DEFAULT_SIZE, 1502, Short.MAX_VALUE)
-        );
-
-        jScrollPane5.setViewportView(subCategoryPanel);
 
         DefaultTableModel dtm = new DefaultTableModel(0, 0);
         resultTable.setModel(dtm
@@ -1078,7 +1075,9 @@ public class HW3 extends javax.swing.JFrame {
         jPanel2.setLayout(jPanel2Layout);
         jPanel2Layout.setHorizontalGroup(
             jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(jButton2, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+            .addGroup(jPanel2Layout.createSequentialGroup()
+                .addComponent(jButton2, javax.swing.GroupLayout.PREFERRED_SIZE, 800, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(0, 0, Short.MAX_VALUE))
         );
         jPanel2Layout.setVerticalGroup(
             jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -1114,6 +1113,101 @@ public class HW3 extends javax.swing.JFrame {
             .addComponent(jButton1, javax.swing.GroupLayout.DEFAULT_SIZE, 61, Short.MAX_VALUE)
         );
 
+        noCheckinLabel1.setBackground(new java.awt.Color(255, 255, 255));
+        noCheckinLabel1.setFont(new java.awt.Font("Comic Sans MS", 0, 16)); // NOI18N
+        noCheckinLabel1.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        noCheckinLabel1.setLabelFor(fromComboBox);
+        noCheckinLabel1.setText("Search For");
+
+        noCheckinLabel2.setBackground(new java.awt.Color(255, 255, 255));
+        noCheckinLabel2.setFont(new java.awt.Font("Comic Sans MS", 0, 16)); // NOI18N
+        noCheckinLabel2.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        noCheckinLabel2.setLabelFor(fromComboBox);
+        noCheckinLabel2.setText("Point Of Interest");
+
+        noCheckinLabel3.setBackground(new java.awt.Color(255, 255, 255));
+        noCheckinLabel3.setFont(new java.awt.Font("Comic Sans MS", 0, 16)); // NOI18N
+        noCheckinLabel3.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        noCheckinLabel3.setLabelFor(fromComboBox);
+        noCheckinLabel3.setText("Proximity");
+
+        fromComboBox1.setFont(new java.awt.Font("Comic Sans MS", 0, 16)); // NOI18N
+        fromComboBox1.setMaximumRowCount(8);
+        fromComboBox1.setModel(new javax.swing.DefaultComboBoxModel(new String[] {"Day", "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday" }));
+        fromComboBox1.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                fromComboBox1MouseClicked(evt);
+            }
+        });
+        fromComboBox1.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                fromComboBox1ActionPerformed(evt);
+            }
+        });
+
+        fromComboBox2.setFont(new java.awt.Font("Comic Sans MS", 0, 16)); // NOI18N
+        fromComboBox2.setMaximumRowCount(8);
+        fromComboBox2.setModel(new javax.swing.DefaultComboBoxModel(new String[] {"Day", "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday" }));
+        fromComboBox2.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                fromComboBox2MouseClicked(evt);
+            }
+        });
+        fromComboBox2.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                fromComboBox2ActionPerformed(evt);
+            }
+        });
+
+        fromComboBox3.setFont(new java.awt.Font("Comic Sans MS", 0, 16)); // NOI18N
+        fromComboBox3.setMaximumRowCount(8);
+        fromComboBox3.setModel(new javax.swing.DefaultComboBoxModel(new String[] {"Day", "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday" }));
+        fromComboBox3.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                fromComboBox3MouseClicked(evt);
+            }
+        });
+        fromComboBox3.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                fromComboBox3ActionPerformed(evt);
+            }
+        });
+
+        javax.swing.GroupLayout jPanel4Layout = new javax.swing.GroupLayout(jPanel4);
+        jPanel4.setLayout(jPanel4Layout);
+        jPanel4Layout.setHorizontalGroup(
+            jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jPanel4Layout.createSequentialGroup()
+                .addContainerGap()
+                .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(noCheckinLabel2)
+                    .addComponent(fromComboBox3, javax.swing.GroupLayout.PREFERRED_SIZE, 313, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 29, Short.MAX_VALUE)
+                .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(noCheckinLabel3)
+                    .addComponent(fromComboBox1, javax.swing.GroupLayout.PREFERRED_SIZE, 129, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addGap(66, 66, 66)
+                .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(fromComboBox2, javax.swing.GroupLayout.PREFERRED_SIZE, 231, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(noCheckinLabel1))
+                .addContainerGap())
+        );
+        jPanel4Layout.setVerticalGroup(
+            jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jPanel4Layout.createSequentialGroup()
+                .addGap(8, 8, 8)
+                .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(noCheckinLabel2)
+                    .addComponent(noCheckinLabel1)
+                    .addComponent(noCheckinLabel3))
+                .addGap(18, 18, 18)
+                .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(fromComboBox1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(fromComboBox2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(fromComboBox3, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+        );
+
         javax.swing.GroupLayout dbCategoryLayout = new javax.swing.GroupLayout(dbCategory);
         dbCategory.setLayout(dbCategoryLayout);
         dbCategoryLayout.setHorizontalGroup(
@@ -1121,46 +1215,36 @@ public class HW3 extends javax.swing.JFrame {
             .addGroup(dbCategoryLayout.createSequentialGroup()
                 .addContainerGap()
                 .addGroup(dbCategoryLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(jPanel3, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addGroup(dbCategoryLayout.createSequentialGroup()
                         .addGroup(dbCategoryLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addGroup(dbCategoryLayout.createSequentialGroup()
-                                .addGroup(dbCategoryLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                    .addComponent(categoryLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 245, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                    .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 0, Short.MAX_VALUE))
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                .addGroup(dbCategoryLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                    .addComponent(subCategoryLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 285, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                    .addComponent(jScrollPane5, javax.swing.GroupLayout.PREFERRED_SIZE, 0, Short.MAX_VALUE)))
-                            .addComponent(jPanel3, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addGroup(dbCategoryLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addGroup(dbCategoryLayout.createSequentialGroup()
-                                .addComponent(jLabel6, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                .addGap(174, 174, 174))
-                            .addGroup(dbCategoryLayout.createSequentialGroup()
-                                .addComponent(checkinPanel, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                .addComponent(reviewPanel, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                .addComponent(jScrollPane8, javax.swing.GroupLayout.PREFERRED_SIZE, 0, Short.MAX_VALUE)
-                                .addContainerGap())
-                            .addGroup(dbCategoryLayout.createSequentialGroup()
-                                .addGroup(dbCategoryLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                .addGroup(dbCategoryLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                                    .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 0, Short.MAX_VALUE)
+                                    .addComponent(categoryLabel, javax.swing.GroupLayout.DEFAULT_SIZE, 261, Short.MAX_VALUE))
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                                .addGroup(dbCategoryLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                                    .addGroup(dbCategoryLayout.createSequentialGroup()
+                                        .addComponent(checkinPanel, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                        .addGap(18, 18, 18)
+                                        .addComponent(reviewPanel, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                                     .addGroup(dbCategoryLayout.createSequentialGroup()
                                         .addComponent(checkinLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 251, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                        .addComponent(jLabel4, javax.swing.GroupLayout.PREFERRED_SIZE, 237, javax.swing.GroupLayout.PREFERRED_SIZE)
                                         .addGap(18, 18, 18)
-                                        .addComponent(jLabel5, javax.swing.GroupLayout.PREFERRED_SIZE, 251, javax.swing.GroupLayout.PREFERRED_SIZE))
-                                    .addComponent(executeQueryButton, javax.swing.GroupLayout.PREFERRED_SIZE, 754, javax.swing.GroupLayout.PREFERRED_SIZE))
-                                .addGap(0, 69, Short.MAX_VALUE))))
-                    .addGroup(dbCategoryLayout.createSequentialGroup()
-                        .addGroup(dbCategoryLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
-                            .addComponent(jPanel2, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                            .addComponent(checkinPanel1, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-                        .addGap(18, 18, 18)
-                        .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))))
+                                        .addComponent(jLabel4, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))))
+                            .addComponent(jPanel2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addGroup(dbCategoryLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
+                                .addComponent(checkinPanel1, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                .addComponent(jPanel4, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))
+                        .addGap(0, 0, Short.MAX_VALUE)))
+                .addGap(18, 18, 18)
+                .addGroup(dbCategoryLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                    .addComponent(jPanel1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(jLabel6, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(jScrollPane8)
+                    .addComponent(jLabel5, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(executeQueryButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
         dbCategoryLayout.setVerticalGroup(
             dbCategoryLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -1172,24 +1256,25 @@ public class HW3 extends javax.swing.JFrame {
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(dbCategoryLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(categoryLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 71, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(subCategoryLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 71, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(checkinLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 71, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(jLabel4, javax.swing.GroupLayout.PREFERRED_SIZE, 71, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(jLabel5, javax.swing.GroupLayout.PREFERRED_SIZE, 52, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(dbCategoryLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addGroup(dbCategoryLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
-                        .addComponent(jPanel2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGroup(dbCategoryLayout.createSequentialGroup()
-                            .addGroup(dbCategoryLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
-                                .addComponent(reviewPanel, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                .addComponent(checkinPanel, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                .addComponent(jScrollPane8))
-                            .addGap(16, 16, 16)
-                            .addComponent(jLabel6, javax.swing.GroupLayout.PREFERRED_SIZE, 53, javax.swing.GroupLayout.PREFERRED_SIZE)))
-                    .addGroup(dbCategoryLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                        .addComponent(jScrollPane2, javax.swing.GroupLayout.DEFAULT_SIZE, 570, Short.MAX_VALUE)
-                        .addComponent(jScrollPane5, javax.swing.GroupLayout.PREFERRED_SIZE, 0, Short.MAX_VALUE)))
+                    .addComponent(jLabel5, javax.swing.GroupLayout.PREFERRED_SIZE, 52, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(jLabel4, javax.swing.GroupLayout.PREFERRED_SIZE, 71, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 26, Short.MAX_VALUE)
+                .addGroup(dbCategoryLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                    .addGroup(dbCategoryLayout.createSequentialGroup()
+                        .addGroup(dbCategoryLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addGroup(dbCategoryLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                                .addComponent(checkinPanel, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 488, javax.swing.GroupLayout.PREFERRED_SIZE))
+                            .addComponent(reviewPanel, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(jPanel4, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(jPanel2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addGroup(dbCategoryLayout.createSequentialGroup()
+                        .addComponent(jScrollPane8, javax.swing.GroupLayout.PREFERRED_SIZE, 607, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addComponent(jLabel6, javax.swing.GroupLayout.PREFERRED_SIZE, 53, javax.swing.GroupLayout.PREFERRED_SIZE)))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(dbCategoryLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
                     .addComponent(checkinPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
@@ -1207,7 +1292,7 @@ public class HW3 extends javax.swing.JFrame {
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(jScrollPane6, javax.swing.GroupLayout.Alignment.TRAILING)
+            .addComponent(jScrollPane6, javax.swing.GroupLayout.DEFAULT_SIZE, 1079, Short.MAX_VALUE)
         );
 
         pack();
@@ -1350,570 +1435,951 @@ public class HW3 extends javax.swing.JFrame {
 
     @SuppressWarnings("empty-statement")
     private void executeQueryButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_executeQueryButtonActionPerformed
-        
+
         DefaultTableModel dtm = new DefaultTableModel(0, 0);
-        try {
-            Class.forName("oracle.jdbc.driver.OracleDriver");
-        } catch (ClassNotFoundException ex) {
-            Logger.getLogger(HW3.class.getName()).log(Level.SEVERE, null, ex);
-        }
 
         //nothing is selected
         if (finalCat.isEmpty()) {
-            if(!memberSince.isEmpty() || !operReviewCount.isEmpty() || !operNoOfFriends.isEmpty() || !operAvgStar.isEmpty()
-                        || !valueReviewCount.isEmpty() || !valueNoOfFriends.isEmpty() || !valueAvgStar.isEmpty() || !andOrAttribute.isEmpty()){
-                
-            try {
-                Class.forName("oracle.jdbc.driver.OracleDriver");
-            } catch (ClassNotFoundException ex) {
-                Logger.getLogger(HW3.class.getName()).log(Level.SEVERE, null, ex);
-            }
-            try {
-                stm = con.createStatement();
-            } catch (SQLException ex) {
-                Logger.getLogger(HW3.class.getName()).log(Level.SEVERE, null, ex);
-            }
-        if(andOrAttribute.contains("AND")){
-            boolean andflag=false;
-                StringBuffer userQuery = new StringBuffer(
-                        "SELECT USER_NAME,YELPING_DATE,REVIEW_COUNT,NUMBER_FRINDS,AVG_STARS\n"
-                        + "   FROM B_USER\n"
-                        + "   WHERE ");
-                if(!memberSince.isEmpty())
-                {
-                    andflag=true;
-                userQuery.append("YELPING_DATE> TO_DATE ('"+memberSince+"','mm/rrrr')");
-                }
-                if(!valueReviewCount.isEmpty())
-                {
-                    if(andflag){
-                     userQuery.append("AND REVIEW_COUNT"+operReviewCount+"'"+valueReviewCount+"'");
-                    }
-                    else {
-                        andflag=true;
-                         userQuery.append("REVIEW_COUNT"+operReviewCount+"'"+valueReviewCount+"'");
-                    }
-               
-                }
-                  if(!valueNoOfFriends.isEmpty())
-                {
-                    if(andflag){
-                     userQuery.append("AND NUMBER_FRINDS"+operNoOfFriends+"'"+valueNoOfFriends+"'");
-                    }
-                    else {
-                        andflag=true;
-                         userQuery.append("NUMBER_FRINDS"+operNoOfFriends+"'"+valueNoOfFriends+"'");
-                    }
-               
-                }
-                  
-                  if(!valueAvgStar.isEmpty())
-                {
-                    Double doubleValueAvgStar=Double.parseDouble(valueAvgStar);
-                    if(andflag){
-                     userQuery.append("AND AVG_STARS"+operAvgStar+"'"+doubleValueAvgStar+"'");
-                    }
-                    else {
-                        andflag=true;
-                         userQuery.append("AVG_STARS"+operAvgStar+"'"+doubleValueAvgStar+"'");
-                    }
-               
-                }
-                  queryLabel.setText("<html><p>"+userQuery.toString()+"</p></html>");
-                  
-                                 ResultSet userResultSet = null;
-                try {
-                    userResultSet = stm.executeQuery(userQuery.toString());
-                } catch (SQLException ex) {
-                    Logger.getLogger(HW3.class.getName()).log(Level.SEVERE, null, ex);
-                }
-                             resultTable.setModel(dtm);
-                    
-                    String header[] = new String[] { "User Name", "Yelping Date", "Review Count",
-                    "Number of Friends", "Avg Stars"};
-
-                    // add header in table model     
-                    dtm.setColumnIdentifiers(header);
-                    
-                try {
-                    while (userResultSet.next()) {
-                        Object[] row = new Object[userResultSet.getMetaData().getColumnCount()];
-                        for (int i = 0; i < row.length; i++) {
-                            row[i] = userResultSet.getObject(i+1);
-                        }
-                        
-                        dtm.addRow(row);
-                        
-                    }
-                } catch (SQLException ex) {
-                    Logger.getLogger(HW3.class.getName()).log(Level.SEVERE, null, ex);
-                }
-                               
-
-                             
-                
-            }
-        else {
-              
-            boolean andflag=false;
-                StringBuffer userQuery = new StringBuffer(
-                        "SELECT USER_NAME,YELPING_DATE,REVIEW_COUNT,NUMBER_FRINDS,AVG_STARS\n"
-                        + "   FROM B_USER\n"
-                        + "   WHERE ");
-                if(!memberSince.isEmpty())
-                {
-                    andflag=true;
-                userQuery.append("YELPING_DATE> TO_DATE ('"+memberSince+"','mm/rrrr')");
-                }
-                if(!valueReviewCount.isEmpty())
-                {
-                    if(andflag){
-                     userQuery.append("OR REVIEW_COUNT"+operReviewCount+"'"+valueReviewCount+"'");
-                    }
-                    else {
-                        andflag=true;
-                         userQuery.append("REVIEW_COUNT"+operReviewCount+"'"+valueReviewCount+"'");
-                    }
-               
-                }
-                  if(!valueNoOfFriends.isEmpty())
-                {
-                    if(andflag){
-                     userQuery.append("OR NUMBER_FRINDS"+operNoOfFriends+"'"+valueNoOfFriends+"'");
-                    }
-                    else {
-                        andflag=true;
-                         userQuery.append("NUMBER_FRINDS"+operNoOfFriends+"'"+valueNoOfFriends+"'");
-                    }
-               
-                }
-                  
-                  if(!valueAvgStar.isEmpty())
-                {
-                    Double doubleValueAvgStar=Double.parseDouble(valueAvgStar);
-                    if(andflag){
-                     userQuery.append("OR AVG_STARS"+operAvgStar+"'"+doubleValueAvgStar+"'");
-                    }
-                    else {
-                        andflag=true;
-                         userQuery.append("AVG_STARS"+operAvgStar+"'"+doubleValueAvgStar+"'");
-                    }
-               
-                }
-               
-                     queryLabel.setText("<html><p>"+userQuery.toString()+"</p></html>");
-                                try (ResultSet userResultSet = stm.executeQuery(userQuery.toString())) {
-                             resultTable.setModel(dtm);
-                    
-                    String header[] = new String[] { "User Name", "Yelping Date", "Review Count",
-                    "Number of Friends", "Avg Stars"};
-
-                    // add header in table model     
-                    dtm.setColumnIdentifiers(header);
-                    
-                    while (userResultSet.next()) {
-                        Object[] row = new Object[userResultSet.getMetaData().getColumnCount()];
-                        for (int i = 0; i < row.length; i++) {
-                            row[i] = userResultSet.getObject(i+1);
-                        }
-                        
-                        dtm.addRow(row);
-                        
-                    }
-                                }
-
-                             catch (SQLException ex) {
-                                Logger.getLogger(HW3.class.getName()).log(Level.SEVERE, null, ex);
-                            }
-
-            
-        }
-
-
-        }
-            else {queryLabel.setText("Please select atleast one category from business");}
+//            if(!memberSince.isEmpty() || !operReviewCount.isEmpty() || !operNoOfFriends.isEmpty() || !operAvgStar.isEmpty()
+//                        || !valueReviewCount.isEmpty() || !valueNoOfFriends.isEmpty() || !valueAvgStar.isEmpty() || !andOrAttribute.isEmpty()){
+//                
+//            try {
+//                Class.forName("oracle.jdbc.driver.OracleDriver");
+//            } catch (ClassNotFoundException ex) {
+//                Logger.getLogger(HW3.class.getName()).log(Level.SEVERE, null, ex);
+//            }
+//            try {
+//                stm = con.createStatement();
+//            } catch (SQLException ex) {
+//                Logger.getLogger(HW3.class.getName()).log(Level.SEVERE, null, ex);
+//            }
+//        if(andOrAttribute.contains("AND")){
+//            boolean andflag=false;
+//                StringBuffer userQuery = new StringBuffer(
+//                        "SELECT USER_NAME,YELPING_DATE,REVIEW_COUNT,NUMBER_FRINDS,AVG_STARS\n"
+//                        + "   FROM B_USER\n"
+//                        + "   WHERE ");
+//                if(!memberSince.isEmpty())
+//                {
+//                    andflag=true;
+//                userQuery.append("YELPING_DATE> TO_DATE ('"+memberSince+"','mm/rrrr')");
+//                }
+//                if(!valueReviewCount.isEmpty())
+//                {
+//                    if(andflag){
+//                     userQuery.append("AND REVIEW_COUNT"+operReviewCount+"'"+valueReviewCount+"'");
+//                    }
+//                    else {
+//                        andflag=true;
+//                         userQuery.append("REVIEW_COUNT"+operReviewCount+"'"+valueReviewCount+"'");
+//                    }
+//               
+//                }
+//                  if(!valueNoOfFriends.isEmpty())
+//                {
+//                    if(andflag){
+//                     userQuery.append("AND NUMBER_FRINDS"+operNoOfFriends+"'"+valueNoOfFriends+"'");
+//                    }
+//                    else {
+//                        andflag=true;
+//                         userQuery.append("NUMBER_FRINDS"+operNoOfFriends+"'"+valueNoOfFriends+"'");
+//                    }
+//               
+//                }
+//                  
+//                  if(!valueAvgStar.isEmpty())
+//                {
+//                    Double doubleValueAvgStar=Double.parseDouble(valueAvgStar);
+//                    if(andflag){
+//                     userQuery.append("AND AVG_STARS"+operAvgStar+"'"+doubleValueAvgStar+"'");
+//                    }
+//                    else {
+//                        andflag=true;
+//                         userQuery.append("AVG_STARS"+operAvgStar+"'"+doubleValueAvgStar+"'");
+//                    }
+//               
+//                }
+//                  queryLabel.setText("<html><p>"+userQuery.toString()+"</p></html>");
+//                  
+//                                 ResultSet userResultSet = null;
+//                try {
+//                    userResultSet = stm.executeQuery(userQuery.toString());
+//                } catch (SQLException ex) {
+//                    Logger.getLogger(HW3.class.getName()).log(Level.SEVERE, null, ex);
+//                }
+//                             resultTable.setModel(dtm);
+//                    
+//                    String header[] = new String[] { "User Name", "Yelping Date", "Review Count",
+//                    "Number of Friends", "Avg Stars"};
+//
+//                    // add header in table model     
+//                    dtm.setColumnIdentifiers(header);
+//                    
+//                try {
+//                    while (userResultSet.next()) {
+//                        Object[] row = new Object[userResultSet.getMetaData().getColumnCount()];
+//                        for (int i = 0; i < row.length; i++) {
+//                            row[i] = userResultSet.getObject(i+1);
+//                        }
+//                        
+//                        dtm.addRow(row);
+//                        
+//                    }
+//                } catch (SQLException ex) {
+//                    Logger.getLogger(HW3.class.getName()).log(Level.SEVERE, null, ex);
+//                }
+//                               
+//
+//                             
+//                
+//            }
+//        else {
+//              
+//            boolean andflag=false;
+//                StringBuffer userQuery = new StringBuffer(
+//                        "SELECT USER_NAME,YELPING_DATE,REVIEW_COUNT,NUMBER_FRINDS,AVG_STARS\n"
+//                        + "   FROM B_USER\n"
+//                        + "   WHERE ");
+//                if(!memberSince.isEmpty())
+//                {
+//                    andflag=true;
+//                userQuery.append("YELPING_DATE> TO_DATE ('"+memberSince+"','mm/rrrr')");
+//                }
+//                if(!valueReviewCount.isEmpty())
+//                {
+//                    if(andflag){
+//                     userQuery.append("OR REVIEW_COUNT"+operReviewCount+"'"+valueReviewCount+"'");
+//                    }
+//                    else {
+//                        andflag=true;
+//                         userQuery.append("REVIEW_COUNT"+operReviewCount+"'"+valueReviewCount+"'");
+//                    }
+//               
+//                }
+//                  if(!valueNoOfFriends.isEmpty())
+//                {
+//                    if(andflag){
+//                     userQuery.append("OR NUMBER_FRINDS"+operNoOfFriends+"'"+valueNoOfFriends+"'");
+//                    }
+//                    else {
+//                        andflag=true;
+//                         userQuery.append("NUMBER_FRINDS"+operNoOfFriends+"'"+valueNoOfFriends+"'");
+//                    }
+//               
+//                }
+//                  
+//                  if(!valueAvgStar.isEmpty())
+//                {
+//                    Double doubleValueAvgStar=Double.parseDouble(valueAvgStar);
+//                    if(andflag){
+//                     userQuery.append("OR AVG_STARS"+operAvgStar+"'"+doubleValueAvgStar+"'");
+//                    }
+//                    else {
+//                        andflag=true;
+//                         userQuery.append("AVG_STARS"+operAvgStar+"'"+doubleValueAvgStar+"'");
+//                    }
+//               
+//                }
+//               
+//                     queryLabel.setText("<html><p>"+userQuery.toString()+"</p></html>");
+//                                try (ResultSet userResultSet = stm.executeQuery(userQuery.toString())) {
+//                             resultTable.setModel(dtm);
+//                    
+//                    String header[] = new String[] { "User Name", "Yelping Date", "Review Count",
+//                    "Number of Friends", "Avg Stars"};
+//
+//                    // add header in table model     
+//                    dtm.setColumnIdentifiers(header);
+//                    
+//                    while (userResultSet.next()) {
+//                        Object[] row = new Object[userResultSet.getMetaData().getColumnCount()];
+//                        for (int i = 0; i < row.length; i++) {
+//                            row[i] = userResultSet.getObject(i+1);
+//                        }
+//                        
+//                        dtm.addRow(row);
+//                        
+//                    }
+//                                }
+//
+//                             catch (SQLException ex) {
+//                                Logger.getLogger(HW3.class.getName()).log(Level.SEVERE, null, ex);
+//                            }
+//
+//            
+//        }
+//
+//
+//        }
+//            else {
+            queryLabel.setText("Please select atleast one category from business");
+//                    }
         } //only cat selected
-        if (finalCat.size() > 0 && finalCat1.isEmpty()) {  
+        if (finalCat.size() > 0) {
+            DB dbBusiness = mongoClient.getDB("business");
+            DBCollection collBusiness = dbBusiness.getCollection("business");
             if (!fromCheckin.isEmpty() && !fromCheckinHour.isEmpty() && !toCheckin.isEmpty() && !toCheckinHour.isEmpty()
                     && !operationCheckin.isEmpty() && !valueCheckin.isEmpty()) {
-
+                        DB dbCheckin = mongoClient.getDB("checkin");
+                        DBCollection collCheckin = dbCheckin.getCollection("checkin");
                 if (!fromReview.isEmpty() && !toReview.isEmpty() && !operationStar.isEmpty() && !valueStar.isEmpty()
                         && !operationVote.isEmpty() && !valueVote.isEmpty()) {
+                    DateFormat format = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.ENGLISH);
+                    String fromDate1 = fromReview;
+                    String fromdate = fromDate1 + "T00:00:00Z";
+                    String toDate1 = toReview;
+                    String todate = toDate1 + "T00:00:00Z";
+                    int starValue = Integer.parseInt(valueStar);
+                    int voteValue = Integer.parseInt(valueVote);
 
+                    DB dbReview = mongoClient.getDB("review");
+                    DBCollection collReview = dbReview.getCollection("review");
                     int j = 0;
-                    for (String t : finalCat) {
-                        
-                            //System.out.println("I am in checkin box");
+                    int l = 0;
 
-                            String[] arrayDays = {"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"};
-                            for (int i = 0; i < arrayDays.length; i++) {
-                                if (fromCheckin == arrayDays[i]) {
-                                    j = i;
+                    HashMap<String, Integer> tempCheckin = new HashMap<String, Integer>();
+                    ArrayList<String> finalCheckinBid = new ArrayList<String>();
+
+                   
+                        ArrayList<CheckinDetail> checkinList = new ArrayList<CheckinDetail>();
+                        //System.out.println("I am in checkin box");
+                        String[] arrayDays = {"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"};
+                        for (int i = 0; i < arrayDays.length; i++) {
+                            if (fromCheckin == arrayDays[i]) {
+                                j = i;
+                            } else if (toCheckin == arrayDays[i]) {
+                                l = i;
+                            }
+                        }
+                        ArrayList<Integer> days = new ArrayList<Integer>();
+                        days.add(j);
+                        int temfromday = j;
+                        days.add(l);
+        
+                        int difference = CheckForDay(fromCheckin, toCheckin);
+                        if (difference > 0) {
+                            for (int k = 0; k < difference; k++) {
+                                j = j + 1;
+                                if (j == 7) {
+                                    j = 0;
+                                }
+                                days.add(j);
+
+                            }
+                        }
+                        List<DBObject> categoryIdList = new ArrayList<DBObject>();
+                         for (String t : finalCat) {
+                        BasicDBObject whereQueryBusiness = new BasicDBObject();
+                        BasicDBObject fieldsBusiness = new BasicDBObject();
+                        fieldsBusiness.put("business_id", 1);
+                        whereQueryBusiness.put("categories", t);
+                        DBCursor cursorForBusiness = collBusiness.find(whereQueryBusiness, fieldsBusiness);
+                        while (cursorForBusiness.hasNext()) {
+                            int i = 1;
+                            categoryIdList.add(cursorForBusiness.next());
+                            i++;
+                        }
+                          }//for FINALCAT
+                          List<DBObject> checkinCategoryIdList = new ArrayList<DBObject>();
+                        for (DBObject s : categoryIdList) {
+                            //System.out.println(s.get("business_id"));
+                            BasicDBObject whereQueryCheckin = new BasicDBObject();
+                            whereQueryCheckin.put("business_id", s.get("business_id"));
+                            DBCursor cursorForCheckin = collCheckin.find(whereQueryCheckin);
+                            while (cursorForCheckin.hasNext()) {
+                                int i = 1;
+                                checkinCategoryIdList.add(cursorForCheckin.next());
+                                i++;
+                            }
+                              }//for DBObject s:categoryIdList
+                            for (DBObject u : checkinCategoryIdList) {
+                                String full = u.get("checkin_info").toString();
+                                String a = full.replaceAll("[{}]", "");
+                                String[] b = a.split(",");
+                                for (int x = 0; x < b.length; x++) {
+                                     CheckinDetail objCheckin = new CheckinDetail();
+                                    String[] c = b[x].split(":");
+                                    
+                                        String d = c[0].replaceAll("[\"]", "");
+                                        String[] e = d.split("-");
+                                        objCheckin.b_Id = u.get("business_id").toString();
+                                        objCheckin.fromTime = Integer.parseInt(e[0].replaceAll("\\s+", ""));
+                                        objCheckin.checkinDay = Integer.parseInt(e[1].replaceAll("\\s+", ""));
+                                        objCheckin.CountValue = Integer.parseInt(c[1].replaceAll("\\s+", ""));;
+                                        checkinList.add(objCheckin);
                                 }
                             }
-//               System.out.println(j);         
-                            int difference = CheckForDay(fromCheckin, toCheckin);
-//                System.out.println(difference);
-                            StringBuffer query1 = new StringBuffer(
-                                    "SELECT DISTINCT I.name,I.CITY, I.STATE, I.STARS,C.B_CATEGORY,S.B_SUBCATEGORY \n"
-                                    + "from b_info I,b_cat C,b_subcat S\n"
-                                    + "where I.B_ID=C.B_ID and C.B_ID=S.B_ID and C.B_CATEGORY= ? and C.B_ID in (  \n"
-                                    + "SELECT b_id FROM B_CHECKIN CH WHERE \n"
-                                    + "((CH.CHECKIN_DAY='" + fromCheckin + "' and TO_CHAR(CH.CHECKIN_TIME,'hh24.mi.ss') >='" + fromCheckinHour + "')\n"
-                                    + "or (CH.CHECKIN_DAY='" + toCheckin + "' and TO_CHAR(CH.CHECKIN_TIME,'hh24.mi.ss') <='" + toCheckinHour + "')");
-                            if (difference > 0) {
-                                for (int k = 0; k < difference; k++) {
-                                    j = j + 1;
-                                    if (j == 7) {
-                                        j = 0;
+
+                      
+
+                        for (CheckinDetail e : checkinList) {
+                            for (int f : days) {
+                                if ( (f == temfromday && temfromday == e.checkinDay && Integer.parseInt(fromCheckinHour) <= e.fromTime)
+                                        || (f == l && l == e.checkinDay && Integer.parseInt(toCheckinHour) >= e.fromTime) 
+                                        || (f == e.checkinDay && f != temfromday && f != l)) {
+//                                    System.out.println(e.b_Id);
+//                                    System.out.println(e.CountValue);
+                                    if (tempCheckin.containsKey(e.b_Id)) {
+                                        tempCheckin.put(e.b_Id, tempCheckin.get(e.b_Id) + e.CountValue);
+                                    } else {
+                                            tempCheckin.put(e.b_Id, e.CountValue);
                                     }
-                                    query1.append(" or CH.CHECKIN_DAY='" + arrayDays[j] + "'");
-
+                                    
                                 }
                             }
+                        }
 
-                            String fQuery = query1.toString()
-                                    + ")AND CH.B_ID IN (SELECT B_ID FROM B_REVIEW WHERE ( \n"
-                                    + "(R_DATE BETWEEN TO_DATE ('" + fromReview + "', 'mm/dd/rr') AND TO_DATE ('" + toReview + "', 'mm/dd/rr')))\n"
-                                    + "GROUP BY B_ID HAVING SUM(STARS)" + operationStar + "'" + valueStar + "' AND SUM(VOTES)" + operationVote + "'" + valueVote + "')\n"
-                                    + "group by b_id having sum(NUMBER_CHECKIN)" + operationCheckin + "'" + valueCheckin + "')";
-                            queryLabel.setText("<html><p>"+fQuery.toString()+"</p></html>");
-                            try (PreparedStatement preparedStatement = con.prepareStatement(fQuery.toString())) {
-                                preparedStatement.setString(1, t);
-                               // preparedStatement.setString(2, s);
+                  
 
-                                try (ResultSet resultSet = preparedStatement.executeQuery()) {
-                                    resultTable.setModel(dtm);
+                    Iterator itr = tempCheckin.entrySet().iterator();
+                    while (itr.hasNext()) {
+                        Map.Entry entry = (Map.Entry) itr.next();
+                        if((operationCheckin.contains("="))){
+                            if(entry.getValue()== valueCheckin){
+                            finalCheckinBid.add(entry.getKey().toString());
+                            }
+                        }
+                        if((operationCheckin.contains("<"))){
+                            if(Integer.parseInt(entry.getValue().toString()) < Integer.parseInt(valueCheckin)){
+                            finalCheckinBid.add(entry.getKey().toString());
+                            //System.out.println("in <");
+                            }
+                        }
+                        if((operationCheckin.contains(">"))){
+                            if(Integer.parseInt(entry.getValue().toString()) > Integer.parseInt(valueCheckin)){
+                            finalCheckinBid.add(entry.getKey().toString());
+                            //System.out.println("in >");
+                            }
+                        } 
+                    }
+                    //abhi tak ki bid is in finalCheckinBid
+//                    for(String a :finalCheckinBid){
+//                    System.out.println(a);
+//                    }
                     
-                    String header[] = new String[] { "Business", "City", "State",
-                    "Stars", "Category","Subcategory"};
+                    try{
+                         List<Object> reviewCategoryIdList = new ArrayList<Object>();
+                                                   
+                            DBObject match = new BasicDBObject("$match", 
+                                new BasicDBObject("date",
+                                        new BasicDBObject("$gt", format.parse(fromdate)).append("$lt", format.parse(todate))));
+             
+                            DBObject groupFields = new BasicDBObject("_id", "$business_id");
+                            groupFields.put("total1", new BasicDBObject("$sum", "$votes.funny"));
+                            groupFields.put("total2", new BasicDBObject("$sum", "$votes.useful"));
+                            groupFields.put("total3", new BasicDBObject("$sum", "$votes.cool"));
+                            groupFields.put("totalStars", new BasicDBObject("$sum", "$stars"));
+                            DBObject group = new BasicDBObject("$group", groupFields);
+
+                            DBObject fields = new BasicDBObject("_id", 1);
+                            BasicDBList addFields = new BasicDBList();
+                            addFields.add("$total1");
+                            addFields.add("$total2");
+                            addFields.add("$total3");
+                            fields.put("totalVotes", new BasicDBObject("$sum", addFields));
+                            fields.put("totalStars", 1);
+                            DBObject project = new BasicDBObject("$project", fields);
+                            BasicDBObject votes = null;
+                            BasicDBObject stars = null;
+                            if(operationStar.equals(">")){
+                            stars = new BasicDBObject("totalStars",new BasicDBObject("$gt",starValue));
+                            }
+                            if(operationStar.equals("<")){
+                            stars = new BasicDBObject("totalStars",new BasicDBObject("$lt",starValue));
+                            }
+                            if(operationStar.equals("=")){
+                            stars = new BasicDBObject("totalStars",new BasicDBObject("$eq",starValue));
+                            }
+                            if(operationVote.equals(">")){
+                            votes =new BasicDBObject("totalVotes",new BasicDBObject("$gt",voteValue));
+                            }
+                            if(operationVote.equals("<")){
+                            votes =new BasicDBObject("totalVotes",new BasicDBObject("$lt",voteValue));
+                            }
+                            if(operationVote.equals("=")){
+                            votes =new BasicDBObject("totalVotes",new BasicDBObject("$eq",voteValue));
+                            }
+                            List<BasicDBObject> list1 = new ArrayList<BasicDBObject>();
+                            list1.add(new BasicDBObject(votes));
+                            list1.add(new BasicDBObject(stars));
+                            DBObject votesnStars = new BasicDBObject("$and",list1 );
+                            DBObject match2 = new BasicDBObject("$match",votesnStars);
+
+                            AggregationOutput cursorForReview = collReview.aggregate(match,group,project,match2);
+                            Iterable<DBObject> list = cursorForReview.results();
+                            Iterator<DBObject> resultSet1=list.iterator();
+                            while (resultSet1.hasNext()){  
+//                            System.out.println(resultSet1.next().get("_id"));
+                            reviewCategoryIdList.add(resultSet1.next().get("_id"));
+                        }  
+//                            System.out.println(reviewCategoryIdList.size());
+//                            System.out.println(finalCheckinBid.size());
+                            reviewCategoryIdList.retainAll(finalCheckinBid);
+//                            System.out.println(reviewCategoryIdList.size());
+//                        for (Object s : reviewCategoryIdList) { 
+//                        System.out.println(s.toString());
+//                        }
+       
+                    
+                    List<DBObject> outputMyList = new ArrayList<DBObject>();
+                    BasicDBObject whereQuery = new BasicDBObject();
+                    for (Object fianlBid2 : reviewCategoryIdList) {
+//                        System.out.println(fianlBid2);
+                        whereQuery.put("business_id", fianlBid2.toString());
+                        DBCursor cursor = collBusiness.find(whereQuery);
+                        while (cursor.hasNext()) {
+                            int i = 1;
+                            //System.out.println(cursor.next());
+                            outputMyList.add(cursor.next());
+                            i++;
+                        }
+                    }
+                    resultTable.setModel(dtm);
+
+                    String header[] = new String[]{"Business", "City", "State",
+                        "Stars"};
 
                     // add header in table model     
                     dtm.setColumnIdentifiers(header);
-                    
-                    while (resultSet.next()) {
-                        Object[] row = new Object[resultSet.getMetaData().getColumnCount()];
-                        for (int i = 0; i < row.length; i++) {
-                            row[i] = resultSet.getObject(i+1);
-                        }
-                        
+                    for (DBObject temp : outputMyList) {
+                        //System.out.println("Business Name : " + temp.get("name") + " Category :  " + temp.get("categories"));
+                        Object[] row = new Object[5];
+                        row[0] = temp.get("name");
+                        row[1] = temp.get("city");
+                        row[2] = temp.get("state");
+                        row[3] = temp.get("stars");
+
                         dtm.addRow(row);
-                        
                     }
-                                }
-
-                            } catch (SQLException ex) {
-                                Logger.getLogger(HW3.class.getName()).log(Level.SEVERE, null, ex);
-                            }
-
-                        
-                    }//for cat n subcat
-
+                     }
+        catch(Exception e){
+        
+        }
                 }//review if
-                else {
-
+                else {//Check in with cat not review
                     int j = 0;
-                    for (String t : finalCat) {
-                        
-                            //System.out.println("I am in checkin box");
+                    int l = 0;
 
-                            String[] arrayDays = {"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"};
-                            for (int i = 0; i < arrayDays.length; i++) {
-                                if (fromCheckin == arrayDays[i]) {
-                                    j = i;
-                                }
+                    HashMap<String, Integer> tempCheckin = new HashMap<String, Integer>();
+                    ArrayList<String> finalCheckinBid = new ArrayList<String>();
+
+                   
+                        ArrayList<CheckinDetail> checkinList = new ArrayList<CheckinDetail>();
+                        //System.out.println("I am in checkin box");
+                        String[] arrayDays = {"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"};
+                        for (int i = 0; i < arrayDays.length; i++) {
+                            if (fromCheckin == arrayDays[i]) {
+                                j = i;
+                            } else if (toCheckin == arrayDays[i]) {
+                                l = i;
                             }
+                        }
+                        ArrayList<Integer> days = new ArrayList<Integer>();
+                        days.add(j);
+                        int temfromday = j;
+                        days.add(l);
+
+//                         System.out.println("Input Data "+j+"  "+fromCheckinHour+"  "+toCheckin+"  "+toCheckinHour+" "+
+//                                        operationCheckin+"  "+valueCheckin);
 //               System.out.println(j);         
-                            int difference = CheckForDay(fromCheckin, toCheckin);
-//                System.out.println(difference);
-                            StringBuffer query1 = new StringBuffer(
-                                    "SELECT DISTINCT I.name,I.CITY, I.STATE, I.STARS,C.B_CATEGORY,S.B_SUBCATEGORY \n"
-                                    + "from b_info I,b_cat C,b_subcat S\n"
-                                    + "where I.B_ID=C.B_ID and C.B_ID=S.B_ID and C.B_CATEGORY= ? and C.B_ID in (  \n"
-                                    + "SELECT b_id FROM B_CHECKIN CH WHERE \n"
-                                    + "((CH.CHECKIN_DAY='" + fromCheckin + "' and TO_CHAR(CH.CHECKIN_TIME,'hh24.mi.ss') >='" + fromCheckinHour + "')\n"
-                                    + "or (CH.CHECKIN_DAY='" + toCheckin + "' and TO_CHAR(CH.CHECKIN_TIME,'hh24.mi.ss') <='" + toCheckinHour + "')");
-                            if (difference > 0) {
-                                for (int k = 0; k < difference; k++) {
-                                    j = j + 1;
-                                    if (j == 7) {
-                                        j = 0;
-                                    }
-                                    query1.append(" or CH.CHECKIN_DAY='" + arrayDays[j] + "'");
+                        int difference = CheckForDay(fromCheckin, toCheckin);
+                        if (difference > 0) {
+                            for (int k = 0; k < difference; k++) {
+                                j = j + 1;
+                                if (j == 7) {
+                                    j = 0;
+                                }
+                                days.add(j);
 
+                            }
+                        }
+//                        for(int q:days){
+//                        System.out.println(q);
+//                        }
+                       
+                        List<DBObject> categoryIdList = new ArrayList<DBObject>();
+                         for (String t : finalCat) {
+                        BasicDBObject whereQueryBusiness = new BasicDBObject();
+                        BasicDBObject fieldsBusiness = new BasicDBObject();
+                        fieldsBusiness.put("business_id", 1);
+                        whereQueryBusiness.put("categories", t);
+                        DBCursor cursorForBusiness = collBusiness.find(whereQueryBusiness, fieldsBusiness);
+                        while (cursorForBusiness.hasNext()) {
+                            int i = 1;
+                            categoryIdList.add(cursorForBusiness.next());
+                            i++;
+                        }
+                          }//for FINALCAT
+                          List<DBObject> checkinCategoryIdList = new ArrayList<DBObject>();
+                        for (DBObject s : categoryIdList) {
+                            //System.out.println(s.get("business_id"));
+                            BasicDBObject whereQueryCheckin = new BasicDBObject();
+                            whereQueryCheckin.put("business_id", s.get("business_id"));
+                            DBCursor cursorForCheckin = collCheckin.find(whereQueryCheckin);
+                            while (cursorForCheckin.hasNext()) {
+                                int i = 1;
+                                checkinCategoryIdList.add(cursorForCheckin.next());
+                                i++;
+                            }
+                              }//for DBObject s:categoryIdList
+                            for (DBObject u : checkinCategoryIdList) {
+//                                System.out.println(s.get("business_id"));    
+//                                System.out.println(u.get("checkin_info").toString());
+                               
+                                String full = u.get("checkin_info").toString();
+                                String a = full.replaceAll("[{}]", "");
+                                String[] b = a.split(",");
+                                for (int x = 0; x < b.length; x++) {
+                                     CheckinDetail objCheckin = new CheckinDetail();
+                                    String[] c = b[x].split(":");
+                                    
+                                        String d = c[0].replaceAll("[\"]", "");
+                                        String[] e = d.split("-");
+                                        objCheckin.b_Id = u.get("business_id").toString();
+//                                        System.out.println(u.get("business_id").toString());
+//                                        System.out.println(e[0]);//from time
+                                        objCheckin.fromTime = Integer.parseInt(e[0].replaceAll("\\s+", ""));
+//                                        System.out.println(e[1]);//day
+                                        objCheckin.checkinDay = Integer.parseInt(e[1].replaceAll("\\s+", ""));
+//                                        System.out.println(c[1]);//value
+                                        objCheckin.CountValue = Integer.parseInt(c[1].replaceAll("\\s+", ""));;
+                                        checkinList.add(objCheckin);
+                                        //System.out.println(checkinList.size());
                                 }
                             }
 
-                            String fQuery = query1.toString()
-                                    + ")group by b_id having sum(NUMBER_CHECKIN)" + operationCheckin + "'" + valueCheckin + "')";
-                              queryLabel.setText("<html><p>"+fQuery.toString()+"</p></html>");
-                            try (PreparedStatement preparedStatement = con.prepareStatement(fQuery.toString())) {
-                                preparedStatement.setString(1, t);
-                                //preparedStatement.setString(2, s);
+                      
 
-                                try (ResultSet resultSet = preparedStatement.executeQuery()) {
-                             resultTable.setModel(dtm);
-                    
-                    String header[] = new String[] { "Business", "City", "State",
-                    "Stars", "Category","Subcategory"};
+                        for (CheckinDetail e : checkinList) {
+
+                            for (int f : days) {
+                                
+                                if ( (f == temfromday && temfromday == e.checkinDay && Integer.parseInt(fromCheckinHour) <= e.fromTime)
+                                        || (f == l && l == e.checkinDay && Integer.parseInt(toCheckinHour) >= e.fromTime) 
+                                        || (f == e.checkinDay && f != temfromday && f != l)) {
+//                                    System.out.println(e.b_Id);
+//                                    System.out.println(e.CountValue);
+                                    if (tempCheckin.containsKey(e.b_Id)) {
+                                        tempCheckin.put(e.b_Id, tempCheckin.get(e.b_Id) + e.CountValue);
+                                    } else {
+                                            tempCheckin.put(e.b_Id, e.CountValue);
+                                    }
+                                    
+                                }
+                            }
+                        }
+
+                  
+
+                    Iterator itr = tempCheckin.entrySet().iterator();
+                    while (itr.hasNext()) {
+                        Map.Entry entry = (Map.Entry) itr.next();
+                        if((operationCheckin.contains("="))){
+                            if(entry.getValue()== valueCheckin){
+                            finalCheckinBid.add(entry.getKey().toString());
+                            }
+                        }
+                        if((operationCheckin.contains("<"))){
+                            if(Integer.parseInt(entry.getValue().toString()) < Integer.parseInt(valueCheckin)){
+                            finalCheckinBid.add(entry.getKey().toString());
+                            //System.out.println("in <");
+                            }
+                        }
+                        if((operationCheckin.contains(">"))){
+                            if(Integer.parseInt(entry.getValue().toString()) > Integer.parseInt(valueCheckin)){
+                            finalCheckinBid.add(entry.getKey().toString());
+                            //System.out.println("in >");
+                            }
+                        }
+                        
+//                            
+                        
+                    }
+                    List<DBObject> outputMyList = new ArrayList<DBObject>();
+                    BasicDBObject whereQuery = new BasicDBObject();
+                    for (String fianlBid2 : finalCheckinBid) {
+                        whereQuery.put("business_id", fianlBid2);
+                        DBCursor cursor = collBusiness.find(whereQuery);
+                        while (cursor.hasNext()) {
+                            int i = 1;
+                            //System.out.println(cursor.next());
+                            outputMyList.add(cursor.next());
+                            i++;
+                        }
+                    }
+                    resultTable.setModel(dtm);
+
+                    String header[] = new String[]{"Business", "City", "State",
+                        "Stars"};
 
                     // add header in table model     
                     dtm.setColumnIdentifiers(header);
-                    
-                    while (resultSet.next()) {
-                        Object[] row = new Object[resultSet.getMetaData().getColumnCount()];
-                        for (int i = 0; i < row.length; i++) {
-                            row[i] = resultSet.getObject(i+1);
-                        }
-                        
+                    for (DBObject temp : outputMyList) {
+                        //System.out.println("Business Name : " + temp.get("name") + " Category :  " + temp.get("categories"));
+                        Object[] row = new Object[5];
+                        row[0] = temp.get("name");
+                        row[1] = temp.get("city");
+                        row[2] = temp.get("state");
+                        row[3] = temp.get("stars");
+
                         dtm.addRow(row);
-                        
                     }
-                                }
-
-                            } catch (SQLException ex) {
-                                Logger.getLogger(HW3.class.getName()).log(Level.SEVERE, null, ex);
-                            }
-
-                        
-                    }//for cat n subcat
+                    // }
                 }//else with no review
             }//if for entire checkin check
-            
-            
-            
-            
-            else{String query = "SELECT DISTINCT I.NAME,I.CITY, I.STATE, I.STARS,C.B_CATEGORY \n"
-                    + "FROM B_INFO I,B_CAT C\n"
-                    + "WHERE I.B_ID=C.B_ID \n"
-                    + "AND C.B_CATEGORY= ?";
-        StringBuffer  queryText = new StringBuffer();
-                          queryText.append("SELECT DISTINCT I.NAME,I.CITY, I.STATE, I.STARS,C.B_CATEGORY \n"
-                    + "FROM B_INFO I,B_CAT C\n"
-                    + "WHERE I.B_ID=C.B_ID \n"
-                    + "AND C.B_CATEGORY IN ");
-            ResultSet resultSet;
-            for (String t : finalCat) {
-                try {
-                    preparedStatement = con.prepareStatement(query);
-                    preparedStatement.setString(1, t);
-                    resultSet = preparedStatement.executeQuery();
+            else {//only cat
+                
+/////////////////////////////////////////Cat N Review/////////////////////////////////////////////////////////////////////
+                if (!fromReview.isEmpty() && !toReview.isEmpty() && !operationStar.isEmpty() && !valueStar.isEmpty()
+                        && !operationVote.isEmpty() && !valueVote.isEmpty()) {
+                    DateFormat format = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.ENGLISH);
+                    String fromDate1 = fromReview;
+                    String fromdate = fromDate1 + "T00:00:00Z";
+                    String toDate1 = toReview;
+                    String todate = toDate1 + "T00:00:00Z";
+                    int starValue = Integer.parseInt(valueStar);
+                    //int voteValue = 4;
+                    int voteValue = Integer.parseInt(valueVote);
+                    DB dbReview = mongoClient.getDB("review");
+                    DBCollection collReview = dbReview.getCollection("review");
                     
-                  
-                    queryText.append("'"+t+"'");
-                    queryLabel.setText("<html><p>"+queryText.toString()+"</p></html>");
+                    //abhi tak ki bid is in finalCheckinBid
+//                    for(String a :finalCheckinBid){
+//                    System.out.println(a);
+//                    }
+                    try{
+                    List<Object> finalCatBid = new ArrayList<Object>();
+                     List<Object> reviewCategoryIdList = new ArrayList<Object>();
+                for (String a : finalCat) {
+                    
+                    BasicDBObject whereQueryBusinessReview = new BasicDBObject();
+                    //System.out.println(a);
+                    whereQueryBusinessReview.put("categories", a);
+                    DBCursor cursor = collBusiness.find(whereQueryBusinessReview);
+                    while (cursor.hasNext()) {
+                        int i = 1;
+                        //System.out.println(cursor.next());
+                        finalCatBid.add(cursor.next().get("business_id"));
+                        i++;
+                    }}
+                            DBObject match = new BasicDBObject("$match", 
+                                new BasicDBObject("date",
+                                        new BasicDBObject("$gt", format.parse(fromdate)).append("$lt", format.parse(todate))));
+             
+                            DBObject groupFields = new BasicDBObject("_id", "$business_id");
+                            groupFields.put("total1", new BasicDBObject("$sum", "$votes.funny"));
+                            groupFields.put("total2", new BasicDBObject("$sum", "$votes.useful"));
+                            groupFields.put("total3", new BasicDBObject("$sum", "$votes.cool"));
+                            groupFields.put("totalStars", new BasicDBObject("$sum", "$stars"));
+                            DBObject group = new BasicDBObject("$group", groupFields);
+
+                            DBObject fields = new BasicDBObject("_id", 1);
+                            BasicDBList addFields = new BasicDBList();
+                            addFields.add("$total1");
+                            addFields.add("$total2");
+                            addFields.add("$total3");
+                            fields.put("totalVotes", new BasicDBObject("$sum", addFields));
+                            fields.put("totalStars", 1);
+                            DBObject project = new BasicDBObject("$project", fields);
+                            BasicDBObject votes = null;
+                            BasicDBObject stars = null;
+                            if(operationStar.equals(">")){
+                            stars = new BasicDBObject("totalStars",new BasicDBObject("$gt",starValue));
+                            }
+                            if(operationStar.equals("<")){
+                            stars = new BasicDBObject("totalStars",new BasicDBObject("$lt",starValue));
+                            }
+                            if(operationStar.equals("=")){
+                            stars = new BasicDBObject("totalStars",new BasicDBObject("$eq",starValue));
+                            }
+                            if(operationVote.equals(">")){
+                            votes =new BasicDBObject("totalVotes",new BasicDBObject("$gt",voteValue));
+                            }
+                            if(operationVote.equals("<")){
+                            votes =new BasicDBObject("totalVotes",new BasicDBObject("$lt",voteValue));
+                            }
+                            if(operationVote.equals("=")){
+                            votes =new BasicDBObject("totalVotes",new BasicDBObject("$eq",voteValue));
+                            }
+                            List<BasicDBObject> list1 = new ArrayList<BasicDBObject>();
+                            list1.add(new BasicDBObject(votes));
+                            list1.add(new BasicDBObject(stars));
+                            DBObject votesnStars = new BasicDBObject("$and",list1 );
+                            DBObject match2 = new BasicDBObject("$match",votesnStars);
+
+                            AggregationOutput cursorForReview = collReview.aggregate(match,group,project,match2);
+                            Iterable<DBObject> list = cursorForReview.results();
+                            Iterator<DBObject> resultSet1=list.iterator();
+                            while (resultSet1.hasNext()){  
+//                            System.out.println(resultSet1.next().get("_id"));
+                            reviewCategoryIdList.add(resultSet1.next().get("_id"));
+                        }  
+                            //System.out.println(reviewCategoryIdList.size());
+                            //System.out.println(finalCatBid.size());
+                            reviewCategoryIdList.retainAll(finalCatBid);
+                            //System.out.println(reviewCategoryIdList.size());
+//                        for (Object s : reviewCategoryIdList) { 
+//                        System.out.println(s.toString());
+//                        }
+       
+                    
+                    List<DBObject> outputMyList = new ArrayList<DBObject>();
+                    for (Object fianlBid2 : reviewCategoryIdList) {
+                    BasicDBObject whereQuery = new BasicDBObject();
+
+//                        System.out.println(fianlBid2);
+                        whereQuery.put("business_id", fianlBid2.toString());
+                        DBCursor cursor = collBusiness.find(whereQuery);
+                        while (cursor.hasNext()) {
+                            int i = 1;
+                            //System.out.println(cursor.next());
+                            outputMyList.add(cursor.next());
+                            i++;
+                        }
+                    }
                     resultTable.setModel(dtm);
-                    
-                    String header[] = new String[] { "Business", "City", "State",
-                    "Stars", "Category"};
+
+                    String header[] = new String[]{"Business", "City", "State",
+                        "Stars"};
 
                     // add header in table model     
                     dtm.setColumnIdentifiers(header);
-                    
-                    while (resultSet.next()) {
-                        Object[] row = new Object[resultSet.getMetaData().getColumnCount()];
-                        for (int i = 0; i < row.length; i++) {
-                            row[i] = resultSet.getObject(i+1);
-                        }
-                        
+                    for (DBObject temp : outputMyList) {
+                        //System.out.println("Business Name : " + temp.get("name") + " Category :  " + temp.get("categories"));
+                        Object[] row = new Object[5];
+                        row[0] = temp.get("name");
+                        row[1] = temp.get("city");
+                        row[2] = temp.get("state");
+                        row[3] = temp.get("stars");
+
                         dtm.addRow(row);
-                        
                     }
+                     }
+        catch(Exception e){
+        
+        }
+                }//////////////////////////////////////////////////////////////////////////////////
+                else{
+                    List<DBObject> testMyList = new ArrayList<DBObject>();
+                for (String a : finalCat) {
                     
-                } catch (SQLException ex) {
-                    Logger.getLogger(HW3.class.getName()).log(Level.SEVERE, null, ex);
+                    BasicDBObject whereQuery = new BasicDBObject();
+                    //System.out.println(a);
+                    whereQuery.put("categories", a);
+                    DBCursor cursor = collBusiness.find(whereQuery);
+                    while (cursor.hasNext()) {
+                        int i = 1;
+                        //System.out.println(cursor.next());
+                        testMyList.add(cursor.next());
+                        i++;
+                    }
+                    resultTable.setModel(dtm);
+                    String header[] = new String[]{"Business", "City", "State",
+                        "Stars", "Category"};
+                    // add header in table model     
+                    dtm.setColumnIdentifiers(header);
+                    for (DBObject temp : testMyList) {
+                        //System.out.println("Business Name : " + temp.get("name") + " Category :  " + temp.get("categories"));
+                        Object[] row = new Object[5];
+                        row[0] = temp.get("name");
+                        row[1] = temp.get("city");
+                        row[2] = temp.get("state");
+                        row[3] = temp.get("stars");
+                        row[4] = a;
+
+                        dtm.addRow(row);
+                    }
                 }
             }
-            
-        }//else
+            }//else
         } //cat and subCat is selected
-        else if (finalCat.size() > 0 && finalCat1.size() > 0) {
+//        else if (finalCat.size() > 0 && finalCat1.size() > 0) {
+//
+//            if (!fromCheckin.isEmpty() && !fromCheckinHour.isEmpty() && !toCheckin.isEmpty() && !toCheckinHour.isEmpty()
+//                    && !operationCheckin.isEmpty() && !valueCheckin.isEmpty()) {
+//
+//                if (!fromReview.isEmpty() && !toReview.isEmpty() && !operationStar.isEmpty() && !valueStar.isEmpty()
+//                        && !operationVote.isEmpty() && !valueVote.isEmpty()) {
+//
+//                    int j = 0;
+//                    for (String t : finalCat) {
+//                        for (String s : finalCat1) {
+//                            //System.out.println("I am in checkin box");
+//
+//                            String[] arrayDays = {"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"};
+//                            for (int i = 0; i < arrayDays.length; i++) {
+//                                if (fromCheckin == arrayDays[i]) {
+//                                    j = i;
+//                                }
+//                            }
+////               System.out.println(j);         
+//                            int difference = CheckForDay(fromCheckin, toCheckin);
+////                System.out.println(difference);
+//                            StringBuffer query1 = new StringBuffer(
+//                                    "SELECT DISTINCT I.name,I.CITY, I.STATE, I.STARS,C.B_CATEGORY,S.B_SUBCATEGORY \n"
+//                                    + "from b_info I,b_cat C,b_subcat S\n"
+//                                    + "where I.B_ID=C.B_ID and C.B_ID=S.B_ID and C.B_CATEGORY= ? and S.B_SUBCATEGORY= ? and C.B_ID in (  \n"
+//                                    + "SELECT b_id FROM B_CHECKIN CH WHERE \n"
+//                                    + "((CH.CHECKIN_DAY='" + fromCheckin + "' and TO_CHAR(CH.CHECKIN_TIME,'hh24.mi.ss') >='" + fromCheckinHour + "')\n"
+//                                    + "or (CH.CHECKIN_DAY='" + toCheckin + "' and TO_CHAR(CH.CHECKIN_TIME,'hh24.mi.ss') <='" + toCheckinHour + "')");
+//                            if (difference > 0) {
+//                                for (int k = 0; k < difference; k++) {
+//                                    j = j + 1;
+//                                    if (j == 7) {
+//                                        j = 0;
+//                                    }
+//                                    query1.append(" or CH.CHECKIN_DAY='" + arrayDays[j] + "'");
+//
+//                                }
+//                            }
+//
+//                            String fQuery = query1.toString()
+//                                    + ")AND CH.B_ID IN (SELECT B_ID FROM B_REVIEW WHERE ( \n"
+//                                    + "(R_DATE BETWEEN TO_DATE ('" + fromReview + "', 'mm/dd/rr') AND TO_DATE ('" + toReview + "', 'mm/dd/rr')))\n"
+//                                    + "GROUP BY B_ID HAVING SUM(STARS)" + operationStar + "'" + valueStar + "' AND SUM(VOTES)" + operationVote + "'" + valueVote + "')\n"
+//                                    + "group by b_id having sum(NUMBER_CHECKIN)" + operationCheckin + "'" + valueCheckin + "')";
+//                            queryLabel.setText("<html><p>" + fQuery.toString() + "</p></html>");
+//                            try (PreparedStatement preparedStatement = con.prepareStatement(fQuery.toString())) {
+//                                preparedStatement.setString(1, t);
+//                                preparedStatement.setString(2, s);
+//
+//                                try (ResultSet resultSet = preparedStatement.executeQuery()) {
+//                                    resultTable.setModel(dtm);
+//
+//                                    String header[] = new String[]{"Business", "City", "State",
+//                                        "Stars", "Category", "Subcategory"};
+//
+//                                    // add header in table model     
+//                                    dtm.setColumnIdentifiers(header);
+//
+//                                    while (resultSet.next()) {
+//                                        Object[] row = new Object[resultSet.getMetaData().getColumnCount()];
+//                                        for (int i = 0; i < row.length; i++) {
+//                                            row[i] = resultSet.getObject(i + 1);
+//                                        }
+//
+//                                        dtm.addRow(row);
+//
+//                                    }
+//                                }
+//
+//                            } catch (SQLException ex) {
+//                                Logger.getLogger(HW4.class.getName()).log(Level.SEVERE, null, ex);
+//                            }
+//
+//                        }
+//                    }//for cat n subcat
+//
+//                }//review if
+//                else {
+//
+//                    int j = 0;
+//                    for (String t : finalCat) {
+//                        for (String s : finalCat1) {
+//                            //System.out.println("I am in checkin box");
+//
+//                            String[] arrayDays = {"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"};
+//                            for (int i = 0; i < arrayDays.length; i++) {
+//                                if (fromCheckin == arrayDays[i]) {
+//                                    j = i;
+//                                }
+//                            }
+////               System.out.println(j);         
+//                            int difference = CheckForDay(fromCheckin, toCheckin);
+////                System.out.println(difference);
+//                            StringBuffer query1 = new StringBuffer(
+//                                    "SELECT DISTINCT I.name,I.CITY, I.STATE, I.STARS,C.B_CATEGORY,S.B_SUBCATEGORY \n"
+//                                    + "from b_info I,b_cat C,b_subcat S\n"
+//                                    + "where I.B_ID=C.B_ID and C.B_ID=S.B_ID and C.B_CATEGORY= ? and S.B_SUBCATEGORY= ? and C.B_ID in (  \n"
+//                                    + "SELECT b_id FROM B_CHECKIN CH WHERE \n"
+//                                    + "((CH.CHECKIN_DAY='" + fromCheckin + "' and TO_CHAR(CH.CHECKIN_TIME,'hh24.mi.ss') >='" + fromCheckinHour + "')\n"
+//                                    + "or (CH.CHECKIN_DAY='" + toCheckin + "' and TO_CHAR(CH.CHECKIN_TIME,'hh24.mi.ss') <='" + toCheckinHour + "')");
+//                            if (difference > 0) {
+//                                for (int k = 0; k < difference; k++) {
+//                                    j = j + 1;
+//                                    if (j == 7) {
+//                                        j = 0;
+//                                    }
+//                                    query1.append(" or CH.CHECKIN_DAY='" + arrayDays[j] + "'");
+//
+//                                }
+//                            }
+//
+//                            String fQuery = query1.toString()
+//                                    + ")group by b_id having sum(NUMBER_CHECKIN)" + operationCheckin + "'" + valueCheckin + "')";
+//                            queryLabel.setText("<html><p>" + fQuery.toString() + "</p></html>");
+//                            try (PreparedStatement preparedStatement = con.prepareStatement(fQuery.toString())) {
+//                                preparedStatement.setString(1, t);
+//                                preparedStatement.setString(2, s);
+//
+//                                try (ResultSet resultSet = preparedStatement.executeQuery()) {
+//                                    resultTable.setModel(dtm);
+//
+//                                    String header[] = new String[]{"Business", "City", "State",
+//                                        "Stars", "Category", "Subcategory"};
+//
+//                                    // add header in table model     
+//                                    dtm.setColumnIdentifiers(header);
+//
+//                                    while (resultSet.next()) {
+//                                        Object[] row = new Object[resultSet.getMetaData().getColumnCount()];
+//                                        for (int i = 0; i < row.length; i++) {
+//                                            row[i] = resultSet.getObject(i + 1);
+//                                        }
+//
+//                                        dtm.addRow(row);
+//
+//                                    }
+//                                }
+//
+//                            } catch (SQLException ex) {
+//                                Logger.getLogger(HW4.class.getName()).log(Level.SEVERE, null, ex);
+//                            }
+//
+//                        }
+//                    }//for cat n subcat
+//                }//else with no review
+//            }//if for entire checkin check
+//            else {
+//
+//                String query = "SELECT DISTINCT I.NAME,I.CITY, I.STATE, I.STARS,C.B_CATEGORY,S.B_SUBCATEGORY \n"
+//                        + "FROM B_INFO I,B_CAT C,B_SUBCAT S\n"
+//                        + "WHERE I.B_ID=C.B_ID AND C.B_ID=S.B_ID \n"
+//                        + "AND C.B_CATEGORY= ? AND S.B_SUBCATEGORY= ?";
+//
+//                //System.out.println(query.toString());
+//                for (String t : finalCat) {
+//                    for (String s : finalCat1) {
+//                        try (PreparedStatement preparedStatement = con.prepareStatement(query)) {
+//                            preparedStatement.setString(1, t);
+//                            preparedStatement.setString(2, s);
+//                            try (ResultSet resultSet = preparedStatement.executeQuery()) {
+//                                resultTable.setModel(dtm);
+//                                queryLabel.setText("<html><p>" + query + "</p></html>");
+//                                String header[] = new String[]{"Business", "City", "State",
+//                                    "Stars", "Category", "Subcategory"};
+//
+//                                // add header in table model     
+//                                dtm.setColumnIdentifiers(header);
+//
+//                                while (resultSet.next()) {
+//                                    Object[] row = new Object[resultSet.getMetaData().getColumnCount()];
+//                                    for (int i = 0; i < row.length; i++) {
+//                                        row[i] = resultSet.getObject(i + 1);
+//                                    }
+//
+//                                    dtm.addRow(row);
+//
+//                                }
+//                            }
+//                        } catch (SQLException ex) {
+//                            Logger.getLogger(HW4.class.getName()).log(Level.SEVERE, null, ex);
+//                        }
+//                    }// for subcat
+//                }//for cat
+//            }
+//        } // end sub category else if
 
-            if (!fromCheckin.isEmpty() && !fromCheckinHour.isEmpty() && !toCheckin.isEmpty() && !toCheckinHour.isEmpty()
-                    && !operationCheckin.isEmpty() && !valueCheckin.isEmpty()) {
-
-                if (!fromReview.isEmpty() && !toReview.isEmpty() && !operationStar.isEmpty() && !valueStar.isEmpty()
-                        && !operationVote.isEmpty() && !valueVote.isEmpty()) {
-
-                    int j = 0;
-                    for (String t : finalCat) {
-                        for (String s : finalCat1) {
-                            //System.out.println("I am in checkin box");
-
-                            String[] arrayDays = {"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"};
-                            for (int i = 0; i < arrayDays.length; i++) {
-                                if (fromCheckin == arrayDays[i]) {
-                                    j = i;
-                                }
-                            }
-//               System.out.println(j);         
-                            int difference = CheckForDay(fromCheckin, toCheckin);
-//                System.out.println(difference);
-                            StringBuffer query1 = new StringBuffer(
-                                    "SELECT DISTINCT I.name,I.CITY, I.STATE, I.STARS,C.B_CATEGORY,S.B_SUBCATEGORY \n"
-                                    + "from b_info I,b_cat C,b_subcat S\n"
-                                    + "where I.B_ID=C.B_ID and C.B_ID=S.B_ID and C.B_CATEGORY= ? and S.B_SUBCATEGORY= ? and C.B_ID in (  \n"
-                                    + "SELECT b_id FROM B_CHECKIN CH WHERE \n"
-                                    + "((CH.CHECKIN_DAY='" + fromCheckin + "' and TO_CHAR(CH.CHECKIN_TIME,'hh24.mi.ss') >='" + fromCheckinHour + "')\n"
-                                    + "or (CH.CHECKIN_DAY='" + toCheckin + "' and TO_CHAR(CH.CHECKIN_TIME,'hh24.mi.ss') <='" + toCheckinHour + "')");
-                            if (difference > 0) {
-                                for (int k = 0; k < difference; k++) {
-                                    j = j + 1;
-                                    if (j == 7) {
-                                        j = 0;
-                                    }
-                                    query1.append(" or CH.CHECKIN_DAY='" + arrayDays[j] + "'");
-
-                                }
-                            }
-
-                            String fQuery = query1.toString()
-                                    + ")AND CH.B_ID IN (SELECT B_ID FROM B_REVIEW WHERE ( \n"
-                                    + "(R_DATE BETWEEN TO_DATE ('" + fromReview + "', 'mm/dd/rr') AND TO_DATE ('" + toReview + "', 'mm/dd/rr')))\n"
-                                    + "GROUP BY B_ID HAVING SUM(STARS)" + operationStar + "'" + valueStar + "' AND SUM(VOTES)" + operationVote + "'" + valueVote + "')\n"
-                                    + "group by b_id having sum(NUMBER_CHECKIN)" + operationCheckin + "'" + valueCheckin + "')";
-                            queryLabel.setText("<html><p>"+fQuery.toString()+"</p></html>");
-                            try (PreparedStatement preparedStatement = con.prepareStatement(fQuery.toString())) {
-                                preparedStatement.setString(1, t);
-                                preparedStatement.setString(2, s);
-
-                                try (ResultSet resultSet = preparedStatement.executeQuery()) {
-                                    resultTable.setModel(dtm);
-                    
-                    String header[] = new String[] { "Business", "City", "State",
-                    "Stars", "Category","Subcategory"};
-
-                    // add header in table model     
-                    dtm.setColumnIdentifiers(header);
-                    
-                    while (resultSet.next()) {
-                        Object[] row = new Object[resultSet.getMetaData().getColumnCount()];
-                        for (int i = 0; i < row.length; i++) {
-                            row[i] = resultSet.getObject(i+1);
-                        }
-                        
-                        dtm.addRow(row);
-                        
-                    }
-                                }
-
-                            } catch (SQLException ex) {
-                                Logger.getLogger(HW3.class.getName()).log(Level.SEVERE, null, ex);
-                            }
-
-                        }
-                    }//for cat n subcat
-
-                }//review if
-                else {
-
-                    int j = 0;
-                    for (String t : finalCat) {
-                        for (String s : finalCat1) {
-                            //System.out.println("I am in checkin box");
-
-                            String[] arrayDays = {"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"};
-                            for (int i = 0; i < arrayDays.length; i++) {
-                                if (fromCheckin == arrayDays[i]) {
-                                    j = i;
-                                }
-                            }
-//               System.out.println(j);         
-                            int difference = CheckForDay(fromCheckin, toCheckin);
-//                System.out.println(difference);
-                            StringBuffer query1 = new StringBuffer(
-                                    "SELECT DISTINCT I.name,I.CITY, I.STATE, I.STARS,C.B_CATEGORY,S.B_SUBCATEGORY \n"
-                                    + "from b_info I,b_cat C,b_subcat S\n"
-                                    + "where I.B_ID=C.B_ID and C.B_ID=S.B_ID and C.B_CATEGORY= ? and S.B_SUBCATEGORY= ? and C.B_ID in (  \n"
-                                    + "SELECT b_id FROM B_CHECKIN CH WHERE \n"
-                                    + "((CH.CHECKIN_DAY='" + fromCheckin + "' and TO_CHAR(CH.CHECKIN_TIME,'hh24.mi.ss') >='" + fromCheckinHour + "')\n"
-                                    + "or (CH.CHECKIN_DAY='" + toCheckin + "' and TO_CHAR(CH.CHECKIN_TIME,'hh24.mi.ss') <='" + toCheckinHour + "')");
-                            if (difference > 0) {
-                                for (int k = 0; k < difference; k++) {
-                                    j = j + 1;
-                                    if (j == 7) {
-                                        j = 0;
-                                    }
-                                    query1.append(" or CH.CHECKIN_DAY='" + arrayDays[j] + "'");
-
-                                }
-                            }
-
-                            String fQuery = query1.toString()
-                                    + ")group by b_id having sum(NUMBER_CHECKIN)" + operationCheckin + "'" + valueCheckin + "')";
-                              queryLabel.setText("<html><p>"+fQuery.toString()+"</p></html>");
-                            try (PreparedStatement preparedStatement = con.prepareStatement(fQuery.toString())) {
-                                preparedStatement.setString(1, t);
-                                preparedStatement.setString(2, s);
-
-                                try (ResultSet resultSet = preparedStatement.executeQuery()) {
-                             resultTable.setModel(dtm);
-                    
-                    String header[] = new String[] { "Business", "City", "State",
-                    "Stars", "Category","Subcategory"};
-
-                    // add header in table model     
-                    dtm.setColumnIdentifiers(header);
-                    
-                    while (resultSet.next()) {
-                        Object[] row = new Object[resultSet.getMetaData().getColumnCount()];
-                        for (int i = 0; i < row.length; i++) {
-                            row[i] = resultSet.getObject(i+1);
-                        }
-                        
-                        dtm.addRow(row);
-                        
-                    }
-                                }
-
-                            } catch (SQLException ex) {
-                                Logger.getLogger(HW3.class.getName()).log(Level.SEVERE, null, ex);
-                            }
-
-                        }
-                    }//for cat n subcat
-                }//else with no review
-            }//if for entire checkin check
-            else {
-
-                String query = "SELECT DISTINCT I.NAME,I.CITY, I.STATE, I.STARS,C.B_CATEGORY,S.B_SUBCATEGORY \n"
-                        + "FROM B_INFO I,B_CAT C,B_SUBCAT S\n"
-                        + "WHERE I.B_ID=C.B_ID AND C.B_ID=S.B_ID \n"
-                        + "AND C.B_CATEGORY= ? AND S.B_SUBCATEGORY= ?";
-
-                //System.out.println(query.toString());
-                for (String t : finalCat) {
-                    for (String s : finalCat1) {
-                        try (PreparedStatement preparedStatement = con.prepareStatement(query)) {
-                            preparedStatement.setString(1, t);
-                            preparedStatement.setString(2, s);
-                            try (ResultSet resultSet = preparedStatement.executeQuery()) {
-                         resultTable.setModel(dtm);
-                      queryLabel.setText("<html><p>"+query+"</p></html>");
-                    String header[] = new String[] { "Business", "City", "State",
-                    "Stars", "Category","Subcategory"};
-
-                    // add header in table model     
-                    dtm.setColumnIdentifiers(header);
-                    
-                    while (resultSet.next()) {
-                        Object[] row = new Object[resultSet.getMetaData().getColumnCount()];
-                        for (int i = 0; i < row.length; i++) {
-                            row[i] = resultSet.getObject(i+1);
-                        }
-                        
-                        dtm.addRow(row);
-                        
-                    }
-                            }
-                        } catch (SQLException ex) {
-                            Logger.getLogger(HW3.class.getName()).log(Level.SEVERE, null, ex);
-                        }
-                    }// for subcat
-                }//for cat
-            }
-        } // end sub category else if
-        
 
     }//GEN-LAST:event_executeQueryButtonActionPerformed
 
@@ -1966,7 +2432,7 @@ public class HW3 extends javax.swing.JFrame {
     }//GEN-LAST:event_numberOfFriendsValueTextFieldKeyTyped
 
     private void andOrComboBoxActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_andOrComboBoxActionPerformed
-       JComboBox cb = (JComboBox) evt.getSource();
+        JComboBox cb = (JComboBox) evt.getSource();
         String a = (String) cb.getSelectedItem();
         if (a == "AND,OR between attribute") {
             andOrAttribute = "";
@@ -2007,9 +2473,8 @@ public class HW3 extends javax.swing.JFrame {
 
     private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
         //business button
-        
+
         jList1.setVisible(true);
-        jList2.setEnabled(true);
         fromComboBox.setEnabled(true);
         fromHourComboBox.setEnabled(true);
         toComboBox.setEnabled(true);
@@ -2044,7 +2509,6 @@ public class HW3 extends javax.swing.JFrame {
         avgStarValueTextField.setEnabled(true);
         andOrComboBox.setEnabled(true);
         jList1.setVisible(false);
-        jList2.setEnabled(false);
         fromComboBox.setEnabled(false);
         fromHourComboBox.setEnabled(false);
         toComboBox.setEnabled(false);
@@ -2058,7 +2522,31 @@ public class HW3 extends javax.swing.JFrame {
         votesComboBox.setEnabled(false);
         votesValueTextField.setEnabled(false);
     }//GEN-LAST:event_jButton2ActionPerformed
-    
+
+    private void fromComboBox1MouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_fromComboBox1MouseClicked
+        // TODO add your handling code here:
+    }//GEN-LAST:event_fromComboBox1MouseClicked
+
+    private void fromComboBox1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_fromComboBox1ActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_fromComboBox1ActionPerformed
+
+    private void fromComboBox2MouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_fromComboBox2MouseClicked
+        // TODO add your handling code here:
+    }//GEN-LAST:event_fromComboBox2MouseClicked
+
+    private void fromComboBox2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_fromComboBox2ActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_fromComboBox2ActionPerformed
+
+    private void fromComboBox3MouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_fromComboBox3MouseClicked
+        // TODO add your handling code here:
+    }//GEN-LAST:event_fromComboBox3MouseClicked
+
+    private void fromComboBox3ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_fromComboBox3ActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_fromComboBox3ActionPerformed
+
     /**
      * @param args the command line arguments
      */
@@ -2076,30 +2564,30 @@ public class HW3 extends javax.swing.JFrame {
                 }
             }
         } catch (ClassNotFoundException ex) {
-            java.util.logging.Logger.getLogger(HW3.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+            java.util.logging.Logger.getLogger(HW4.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
         } catch (InstantiationException ex) {
-            java.util.logging.Logger.getLogger(HW3.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+            java.util.logging.Logger.getLogger(HW4.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
         } catch (IllegalAccessException ex) {
-            java.util.logging.Logger.getLogger(HW3.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+            java.util.logging.Logger.getLogger(HW4.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
         } catch (javax.swing.UnsupportedLookAndFeelException ex) {
-            java.util.logging.Logger.getLogger(HW3.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+            java.util.logging.Logger.getLogger(HW4.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
         }
         //</editor-fold>
 
         /* Create and display the form */
         java.awt.EventQueue.invokeLater(new Runnable() {
             public void run() {
-                HW3 jFrame;
+                HW4 jFrame;
 
                 try {
-                    jFrame = new HW3();
+                    jFrame = new HW4();
                     jFrame.setVisible(true);
                     jFrame.connect();
                     jFrame.pack();
                     jFrame.setVisible(true);
 
                 } catch (ClassNotFoundException | SQLException ex) {
-                    Logger.getLogger(HW3.class.getName()).log(Level.SEVERE, null, ex);
+                    Logger.getLogger(HW4.class.getName()).log(Level.SEVERE, null, ex);
                 }
             }
         });
@@ -2122,6 +2610,9 @@ public class HW3 extends javax.swing.JFrame {
     private javax.swing.JPanel dbCategory;
     private javax.swing.JButton executeQueryButton;
     private javax.swing.JComboBox fromComboBox;
+    private javax.swing.JComboBox fromComboBox1;
+    private javax.swing.JComboBox fromComboBox2;
+    private javax.swing.JComboBox fromComboBox3;
     private javax.swing.JComboBox fromHourComboBox;
     private javax.swing.JLabel fromLabel;
     private javax.swing.JLabel fromLabel1;
@@ -2135,19 +2626,20 @@ public class HW3 extends javax.swing.JFrame {
     private javax.swing.JLabel jLabel5;
     private javax.swing.JLabel jLabel6;
     private javax.swing.JList jList1;
-    private javax.swing.JList jList2;
     private javax.swing.JPanel jPanel1;
     private javax.swing.JPanel jPanel2;
     private javax.swing.JPanel jPanel3;
+    private javax.swing.JPanel jPanel4;
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JScrollPane jScrollPane2;
-    private javax.swing.JScrollPane jScrollPane3;
-    private javax.swing.JScrollPane jScrollPane5;
     private javax.swing.JScrollPane jScrollPane6;
     private javax.swing.JScrollPane jScrollPane8;
     private javax.swing.JTabbedPane jTabbedPane1;
     private com.toedter.calendar.JDateChooser memberSinceDateBox;
     private javax.swing.JLabel noCheckinLabel;
+    private javax.swing.JLabel noCheckinLabel1;
+    private javax.swing.JLabel noCheckinLabel2;
+    private javax.swing.JLabel noCheckinLabel3;
     private javax.swing.JComboBox numberOfFriendsComboBox;
     private javax.swing.JTextField numberOfFriendsValueTextField;
     private javax.swing.JLabel queryLabel;
@@ -2159,8 +2651,6 @@ public class HW3 extends javax.swing.JFrame {
     private javax.swing.JComboBox starsComboBox;
     private javax.swing.JLabel starsLabel;
     private javax.swing.JTextField starsValueTextField;
-    private javax.swing.JLabel subCategoryLabel;
-    private javax.swing.JPanel subCategoryPanel;
     private javax.swing.JComboBox toComboBox;
     private javax.swing.JComboBox toHourComboBox;
     private javax.swing.JLabel toLabel;
@@ -2177,12 +2667,15 @@ public class HW3 extends javax.swing.JFrame {
     // End of variables declaration//GEN-END:variables
 
     private void connect() throws ClassNotFoundException, SQLException {
-//        String url = "jdbc:oracle:thin:@localhost:1523:orcl123";
-//        String uname = "sys as sysdba";
-//        String password = "Mansimalik2402";
-        Class.forName("oracle.jdbc.driver.OracleDriver");
-        stm = con.createStatement();
-        ResultSet result = stm.executeQuery("select distinct b_category from b_cat");
+
+        String[] main_categories = {"Active Life", "Arts & Entertainment",
+            "Automotive", "Car Rental", "Cafes", "Beauty & Spas",
+            "Convenience Stores", "Dentists", "Doctors", "Drugstores",
+            "Department Stores", "Education", "Event Planning & Services",
+            "Flowers & Gifts", "Food", "Health & Medical", "Home Services",
+            "Home & Garden", "Hospitals", "Hotels & Travel", "Hardware Stores",
+            "Grocery", "Medical Centers", "Nurseries & Gardening", "Nightlife",
+            "Restaurants", "Shopping", "Transportation"};
         jList1.setCellRenderer(new CheckboxListRenderer());
         jList1.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
         jList1.addMouseListener(new MouseAdapter() {
@@ -2195,35 +2688,13 @@ public class HW3 extends javax.swing.JFrame {
                         .getElementAt(index);
                 // Toggle selected state
                 item.setSelected(!item.isSelected());
-
-                DefaultListModel<CheckboxListItem> model1 = (DefaultListModel) jList2.getModel();
-
                 if (item.isSelected()) {
-                    model1.clear();
-                    finalCat1.clear();
                     finalCat.add(item.toString());
-                    try {
-                        subCat(finalCat, model1);
-                    } catch (ClassNotFoundException ex) {
-                        Logger.getLogger(HW3.class.getName()).log(Level.SEVERE, null, ex);
-                    } catch (SQLException ex) {
-                        Logger.getLogger(HW3.class.getName()).log(Level.SEVERE, null, ex);
-                    }
 //                for(String t:finalCat){
 //                System.out.println(t);
 //                }
                 } else {
-                    model1.clear();
-                    finalCat1.clear();
                     finalCat.remove(item.toString());
-                    try {
-                        subCat(finalCat, model1);
-                    } catch (ClassNotFoundException ex) {
-                        Logger.getLogger(HW3.class.getName()).log(Level.SEVERE, null, ex);
-                    } catch (SQLException ex) {
-                        Logger.getLogger(HW3.class.getName()).log(Level.SEVERE, null, ex);
-                    }
-
                 }
                 //System.out.println("Size of arraylist : "+finalCat.size());
                 // Repaint cell
@@ -2231,53 +2702,12 @@ public class HW3 extends javax.swing.JFrame {
                 list.repaint(list.getCellBounds(index, index));
             }
         });
-        while (result.next()) {
-            
-            String cat = result.getString(1);
-            CheckboxListItem cbl = new CheckboxListItem(cat);
+        for (int i = 0; i < main_categories.length; i++) {
+
+            CheckboxListItem cbl = new CheckboxListItem(main_categories[i]);
             model.addElement(cbl);
         }
     }
-
-    private void subCat(ArrayList<String> finalCat, DefaultListModel<CheckboxListItem> model) throws ClassNotFoundException, SQLException {
-        for (String t : finalCat) {
-            //System.out.println(t);
-            ResultSet subResult = stm.executeQuery("select distinct b_subcategory from b_subcat where b_category='" + t + "'");
-            jList2.setCellRenderer(new CheckboxListRenderer());
-            jList2.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
-            jList2.addMouseListener(new MouseAdapter() {
-                @Override
-                public void mouseClicked(MouseEvent event) {
-                    JList<CheckboxListItem> list2
-                            = (JList<CheckboxListItem>) event.getSource();
-                    // Get index of item clicked
-                    int index = list2.locationToIndex(event.getPoint());
-                    CheckboxListItem item = (CheckboxListItem) list2.getModel()
-                            .getElementAt(index);
-                    // Toggle selected state
-                    item.setSelected(!item.isSelected());
-                    if (item.isSelected()) {
-                        //System.out.println(item.toString());
-                        finalCat1.add(item.toString());
-                    } else {
-                        finalCat1.remove(item.toString());
-                        //System.out.println("Size of arraylist off click : "+finalCat1.size());
-                    }
-                    //System.out.println("Size of arraylist : " + finalCat1.size());
-                    // Repaint cell
-                    list2.repaint(list2.getCellBounds(index, index));
-
-                }//mouse event
-            });//mouse adapter
-            while (subResult.next()) {
-                String subCat = subResult.getString(1);
-                CheckboxListItem cb2 = new CheckboxListItem(subCat);
-                model.addElement(cb2);
-
-            }//while
-        }//for
-
-    }//subcat method
 
     private int CheckForDay(String from, String to) {
         int value1 = 0;
@@ -2327,10 +2757,8 @@ public class HW3 extends javax.swing.JFrame {
         }
 
         int difference = value2 - value1;
-        if (difference > 0) {
-            difference = difference - 1;
-        }
-        if (difference == -0) {
+
+        if (difference == 0) {
             difference = 6;
         }
         if (difference == -1) {
@@ -2351,26 +2779,31 @@ public class HW3 extends javax.swing.JFrame {
         if (difference == -6) {
             difference = 0;
         }
+        if (difference > 0) {
+            difference = difference - 1;
+        }
         return difference;
     }//checkForDay
-private String clobToString(Clob data) throws IOException {
-    StringBuilder sb = new StringBuilder();
-    try {
-        Reader reader = data.getCharacterStream();
-        BufferedReader br = new BufferedReader(reader);
 
-        String line;
-        while(null != (line = br.readLine())) {
-            sb.append(line);
+    private String clobToString(Clob data) throws IOException {
+        StringBuilder sb = new StringBuilder();
+        try {
+            Reader reader = data.getCharacterStream();
+            BufferedReader br = new BufferedReader(reader);
+
+            String line;
+            while (null != (line = br.readLine())) {
+                sb.append(line);
+            }
+            br.close();
+        } catch (SQLException e) {
+            // handle this exception
+        } catch (IOException e) {
+            // handle this exception
         }
-        br.close();
-    } catch (SQLException e) {
-        // handle this exception
-    } catch (IOException e) {
-        // handle this exception
+        return sb.toString();
     }
-    return sb.toString();
-}
+
 }//class hw3
 
 class CheckboxListItem {
