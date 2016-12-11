@@ -16,16 +16,9 @@ import java.awt.event.MouseEvent;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.Reader;
-import static java.lang.Double.parseDouble;
 import java.sql.Clob;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement;
 import java.text.DateFormat;
-import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -48,8 +41,6 @@ import javax.swing.ListSelectionModel;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import javax.swing.table.DefaultTableModel;
-import org.bson.Document;
-
 
 /*
  * To change this license header, choose License Headers in Project Properties.
@@ -62,17 +53,8 @@ import org.bson.Document;
  */
 public class HW4 extends javax.swing.JFrame {
 
-    private static String url;
-    private static String uname;
-    private static String password;
     public static Boolean label;
-    private static Connection con = null;
-    private static Statement stm = null;
-    private static PreparedStatement preparedStatement = null;
-
     public static ArrayList<String> finalCat;
-//    public static ArrayList<CheckinDetail> checkinList;
-    public static ArrayList<String> finalCat1;
     public static String fromCheckin;
     public static String fromCheckinHour;
     public static String toCheckin;
@@ -96,7 +78,13 @@ public class HW4 extends javax.swing.JFrame {
     public static String valueAvgStar;
     public static String andOrAttribute;
     public MongoClient mongoClient;
-
+    public static String Address;
+    public static String proximity;
+    public static String searchFor;
+    public static Double longitude;
+    public static Double latitude;
+    public static String operNoOfVotes;
+    public static String valueNoOfVotes;
     public static DefaultListModel<CheckboxListItem> model;
 
     /**
@@ -104,13 +92,9 @@ public class HW4 extends javax.swing.JFrame {
      */
     public HW4() throws SQLException {
         initComponents();
-        url = "jdbc:oracle:thin:@localhost:1523:orcl123";
-        uname = "sys as sysdba";
-        password = "Mansimalik2402";
 
         label = true;
         finalCat = new ArrayList<>();
-        finalCat1 = new ArrayList<String>();
         fromCheckin = "";
         fromCheckinHour = "";
         toCheckin = "";
@@ -131,6 +115,14 @@ public class HW4 extends javax.swing.JFrame {
         valueNoOfFriends = "";
         valueAvgStar = "";
         andOrAttribute = "";
+        Address = "";
+        proximity = "";
+        searchFor = "";
+        latitude = 0.0;
+        longitude = 0.0;
+        operNoOfVotes = "";
+        valueNoOfVotes = "";
+
 //        checkinList = new ArrayList<CheckinDetail>();
         mongoClient = new MongoClient("localhost", 27017);
         memberSinceDateBox.setEnabled(false);
@@ -142,7 +134,7 @@ public class HW4 extends javax.swing.JFrame {
         avgStarValueTextField.setEnabled(false);
         andOrComboBox.setEnabled(false);
         model = (DefaultListModel) jList1.getModel();
-        con = DriverManager.getConnection(url, uname, password);
+
         checkinValueTextField.getDocument().addDocumentListener(new DocumentListener() {
 
             @Override
@@ -285,71 +277,67 @@ public class HW4 extends javax.swing.JFrame {
 
         });
 
+        noOfVotesValueTextField.getDocument().addDocumentListener(new DocumentListener() {
+
+            @Override
+            public void insertUpdate(DocumentEvent e) {
+                text();
+            }
+
+            @Override
+            public void removeUpdate(DocumentEvent e) {
+                text();
+            }
+
+            @Override
+            public void changedUpdate(DocumentEvent e) {
+                text();
+            }
+
+            public void text() {
+                valueNoOfVotes = noOfVotesValueTextField.getText();
+                System.out.println(valueNoOfVotes);
+            }
+
+        });
+
         //fromReview = ((JTextField) fromReviewDate.getDateEditor().getUiComponent()).getText();
         //System.out.println(fromReview);
         resultTable.addMouseListener(new java.awt.event.MouseAdapter() {
             @Override
             public void mouseClicked(java.awt.event.MouseEvent evt) {
 
-                try {
-                    Class.forName("oracle.jdbc.driver.OracleDriver");
-                } catch (ClassNotFoundException ex) {
-                    Logger.getLogger(HW4.class.getName()).log(Level.SEVERE, null, ex);
-                }
-                try {
-                    stm = con.createStatement();
-                } catch (SQLException ex) {
-                    Logger.getLogger(HW4.class.getName()).log(Level.SEVERE, null, ex);
-                }
                 int row = resultTable.rowAtPoint(evt.getPoint());
                 int col = resultTable.columnAtPoint(evt.getPoint());
+                DB dbReview = mongoClient.getDB("review");
+                DBCollection collReview = dbReview.getCollection("review");
+                JTable im = new JTable();
+                DefaultTableModel reviewModel = new DefaultTableModel(0, 0);
+                im.setModel(reviewModel);
+
+                String header[] = new String[]{"Name", "Review"};
+                reviewModel.setColumnIdentifiers(header);
+                //im.setRowHeight(50);
 
                 if (!memberSince.isEmpty() || !operReviewCount.isEmpty() || !operNoOfFriends.isEmpty() || !operAvgStar.isEmpty()
                         || !valueReviewCount.isEmpty() || !valueNoOfFriends.isEmpty() || !valueAvgStar.isEmpty() || !andOrAttribute.isEmpty()) {
-
+                    
+                    
                     if (row >= 0 && col == 0) {
                         String tableValue = resultTable.getValueAt(row, col).toString();
-
-                        if (tableValue.contains("'")) {
-                            String[] split1 = tableValue.split("'");
-                            tableValue = split1[0];
-
-                        }
-
-                        JTable im = new JTable();
-                        DefaultTableModel reviewModel = new DefaultTableModel(0, 0);
-                        im.setModel(reviewModel);
-//        String header[] = new String[]{"Review"};
-//        reviewModel.setColumnIdentifiers(header);
-                        reviewModel.addColumn("Review");
-                        im.setRowHeight(50);
-
-                        try {
-                            String reviewQuery = "SELECT RE.Review from B_REVIEW RE,B_USER US \n"
-                                    + "WHERE US.U_ID= RE.U_ID AND US.USER_NAME LIKE '%" + tableValue + "%'";
-                            System.out.println(reviewQuery);
-                            //System.out.println(reviewQuery);
-                            ResultSet result = stm.executeQuery(reviewQuery);
-
-                            Clob myclob = null;
-                            while (result.next()) {
-                                Object[] rowReview = new Object[result.getMetaData().getColumnCount()];
-                                System.out.println(result.getMetaData().getColumnCount());
-                                for (int i = 0; i < rowReview.length; i++) {
-                                    myclob = (Clob) result.getClob(i + 1);
-                                    //System.out.println(clobToString(myclob));
-                                    rowReview[i] = clobToString(myclob);
-
-                                }
-                                reviewModel.addRow(rowReview);
-
+                        String name= resultTable.getValueAt(row, col+1).toString();
+                        
+                        BasicDBObject whereQuery = new BasicDBObject();
+                        whereQuery.put("user_id", tableValue);
+                        DBCursor cursor = collReview.find(whereQuery);
+                        while (cursor.hasNext()) {
+                            Object[] rowReview = new Object[2];
+                             rowReview[0] =name;
+                             rowReview[1] = cursor.next().get("text").toString();
+                              
+                            reviewModel.addRow(rowReview);
                             }
-                        } catch (SQLException ex) {
-                            Logger.getLogger(HW4.class.getName()).log(Level.SEVERE, null, ex);
-                        } catch (IOException ex) {
-                            Logger.getLogger(HW4.class.getName()).log(Level.SEVERE, null, ex);
-                        }
-
+                        
                         mydialog = new JDialog();
                         mydialog.setSize(new Dimension(1000, 1000));
                         mydialog.setTitle("Reviews By User");
@@ -366,42 +354,18 @@ public class HW4 extends javax.swing.JFrame {
 
                     if (row >= 0 && col == 0) {
                         String tableValue = resultTable.getValueAt(row, col).toString();
-                        if (tableValue.contains("'")) {
-                            String[] split1 = tableValue.split("'");
-                            tableValue = split1[0];
-
-                        }
-                        JTable im = new JTable();
-                        DefaultTableModel reviewModel = new DefaultTableModel(0, 0);
-                        im.setModel(reviewModel);
-//        String header[] = new String[]{"Review"};
-//        reviewModel.setColumnIdentifiers(header);
-                        reviewModel.addColumn("Review");
-                        im.setRowHeight(50);
-
-                        try {
-                            String reviewQuery = "SELECT RE.Review from B_REVIEW RE,B_INFO INF "
-                                    + "WHERE INF.B_ID= RE.B_ID AND INF.NAME Like '%" + tableValue + "%'";
-                            //System.out.println(reviewQuery);
-                            ResultSet result = stm.executeQuery(reviewQuery);
-                            Clob myclob = null;
-                            while (result.next()) {
-                                Object[] rowReview = new Object[result.getMetaData().getColumnCount()];
-                                for (int i = 0; i < rowReview.length; i++) {
-                                    myclob = (Clob) result.getClob(i + 1);
-                                    //System.out.println(clobToString(myclob));
-                                    rowReview[i] = clobToString(myclob);
-
-                                }
-                                reviewModel.addRow(rowReview);
-
+                        //String name= resultTable.getValueAt(row, col+1).toString();
+                        
+                        BasicDBObject whereQuery = new BasicDBObject();
+                        whereQuery.put("business_id", tableValue);
+                        DBCursor cursor = collReview.find(whereQuery);
+                        while (cursor.hasNext()) {
+                            Object[] rowReview = new Object[1];
+                             //rowReview[0] =name;
+                             rowReview[0] = cursor.next().get("text").toString();
+                              
+                            reviewModel.addRow(rowReview);
                             }
-                        } catch (SQLException ex) {
-                            Logger.getLogger(HW4.class.getName()).log(Level.SEVERE, null, ex);
-                        } catch (IOException ex) {
-                            Logger.getLogger(HW4.class.getName()).log(Level.SEVERE, null, ex);
-                        }
-
                         mydialog = new JDialog();
                         mydialog.setSize(new Dimension(1000, 1000));
                         mydialog.setTitle("Reviews By User");
@@ -463,6 +427,25 @@ public class HW4 extends javax.swing.JFrame {
         toReviewDate = new com.toedter.calendar.JDateChooser();
         jLabel5 = new javax.swing.JLabel();
         jLabel6 = new javax.swing.JLabel();
+        jScrollPane2 = new javax.swing.JScrollPane();
+        categoryPanel = new javax.swing.JPanel();
+        jScrollPane1 = new javax.swing.JScrollPane();
+        jList1 = new javax.swing.JList();
+        jScrollPane8 = new javax.swing.JScrollPane();
+        resultTable = new javax.swing.JTable();
+        jPanel1 = new javax.swing.JPanel();
+        queryLabel = new javax.swing.JLabel();
+        jPanel2 = new javax.swing.JPanel();
+        jButton2 = new javax.swing.JButton();
+        executeQueryButton = new javax.swing.JButton();
+        jPanel3 = new javax.swing.JPanel();
+        jPanel4 = new javax.swing.JPanel();
+        noCheckinLabel1 = new javax.swing.JLabel();
+        noCheckinLabel2 = new javax.swing.JLabel();
+        noCheckinLabel3 = new javax.swing.JLabel();
+        proximityComboBox = new javax.swing.JComboBox();
+        searchForComboBox = new javax.swing.JComboBox();
+        pointOfInterestComboBox = new javax.swing.JComboBox();
         checkinPanel1 = new javax.swing.JPanel();
         fromLabel1 = new javax.swing.JLabel();
         toLabel1 = new javax.swing.JLabel();
@@ -477,26 +460,10 @@ public class HW4 extends javax.swing.JFrame {
         avgStarValueTextField = new javax.swing.JTextField();
         toLabel4 = new javax.swing.JLabel();
         avgStarComboBox = new javax.swing.JComboBox();
-        jScrollPane2 = new javax.swing.JScrollPane();
-        categoryPanel = new javax.swing.JPanel();
-        jScrollPane1 = new javax.swing.JScrollPane();
-        jList1 = new javax.swing.JList();
-        jScrollPane8 = new javax.swing.JScrollPane();
-        resultTable = new javax.swing.JTable();
-        jPanel1 = new javax.swing.JPanel();
-        queryLabel = new javax.swing.JLabel();
-        jPanel2 = new javax.swing.JPanel();
-        jButton2 = new javax.swing.JButton();
-        executeQueryButton = new javax.swing.JButton();
-        jPanel3 = new javax.swing.JPanel();
+        toLabel5 = new javax.swing.JLabel();
+        numberOfVotesComboBox = new javax.swing.JComboBox();
+        noOfVotesValueTextField = new javax.swing.JTextField();
         jButton1 = new javax.swing.JButton();
-        jPanel4 = new javax.swing.JPanel();
-        noCheckinLabel1 = new javax.swing.JLabel();
-        noCheckinLabel2 = new javax.swing.JLabel();
-        noCheckinLabel3 = new javax.swing.JLabel();
-        fromComboBox1 = new javax.swing.JComboBox();
-        fromComboBox2 = new javax.swing.JComboBox();
-        fromComboBox3 = new javax.swing.JComboBox();
 
         javax.swing.GroupLayout jFrame1Layout = new javax.swing.GroupLayout(jFrame1.getContentPane());
         jFrame1.getContentPane().setLayout(jFrame1Layout);
@@ -843,6 +810,195 @@ public class HW4 extends javax.swing.JFrame {
         jLabel6.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
         jLabel6.setText("Sql Query");
 
+        categoryPanel.setBackground(new java.awt.Color(255, 255, 255));
+
+        DefaultListModel<String> listModel = new DefaultListModel<String>();
+        jList1.setModel(listModel);
+        jScrollPane1.setViewportView(jList1);
+
+        javax.swing.GroupLayout categoryPanelLayout = new javax.swing.GroupLayout(categoryPanel);
+        categoryPanel.setLayout(categoryPanelLayout);
+        categoryPanelLayout.setHorizontalGroup(
+            categoryPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(categoryPanelLayout.createSequentialGroup()
+                .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 246, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(0, 118, Short.MAX_VALUE))
+        );
+        categoryPanelLayout.setVerticalGroup(
+            categoryPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(categoryPanelLayout.createSequentialGroup()
+                .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 541, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(0, 961, Short.MAX_VALUE))
+        );
+
+        jScrollPane2.setViewportView(categoryPanel);
+
+        DefaultTableModel dtm = new DefaultTableModel(0, 0);
+        resultTable.setModel(dtm
+        );
+        jScrollPane8.setViewportView(resultTable);
+
+        jPanel1.setBackground(new java.awt.Color(255, 255, 255));
+
+        queryLabel.setBackground(new java.awt.Color(255, 255, 255));
+        queryLabel.setFont(new java.awt.Font("Comic Sans MS", 0, 18)); // NOI18N
+        queryLabel.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        queryLabel.setLabelFor(executeQueryButton);
+        queryLabel.setText("");
+        queryLabel.setVerticalAlignment(javax.swing.SwingConstants.TOP);
+
+        javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
+        jPanel1.setLayout(jPanel1Layout);
+        jPanel1Layout.setHorizontalGroup(
+            jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addComponent(queryLabel, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, 749, Short.MAX_VALUE)
+        );
+        jPanel1Layout.setVerticalGroup(
+            jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addComponent(queryLabel, javax.swing.GroupLayout.DEFAULT_SIZE, 247, Short.MAX_VALUE)
+        );
+
+        jPanel2.setBackground(new java.awt.Color(255, 255, 153));
+
+        jButton2.setBackground(new java.awt.Color(255, 255, 153));
+        jButton2.setText("User");
+        jButton2.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButton2ActionPerformed(evt);
+            }
+        });
+
+        javax.swing.GroupLayout jPanel2Layout = new javax.swing.GroupLayout(jPanel2);
+        jPanel2.setLayout(jPanel2Layout);
+        jPanel2Layout.setHorizontalGroup(
+            jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel2Layout.createSequentialGroup()
+                .addGap(0, 0, Short.MAX_VALUE)
+                .addComponent(jButton2, javax.swing.GroupLayout.PREFERRED_SIZE, 800, javax.swing.GroupLayout.PREFERRED_SIZE))
+        );
+        jPanel2Layout.setVerticalGroup(
+            jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel2Layout.createSequentialGroup()
+                .addGap(0, 0, Short.MAX_VALUE)
+                .addComponent(jButton2, javax.swing.GroupLayout.PREFERRED_SIZE, 68, javax.swing.GroupLayout.PREFERRED_SIZE))
+        );
+
+        executeQueryButton.setText("Execute Query");
+        executeQueryButton.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                executeQueryButtonActionPerformed(evt);
+            }
+        });
+
+        jPanel3.setBackground(new java.awt.Color(255, 255, 153));
+        jPanel3.setFont(new java.awt.Font("Comic Sans MS", 0, 18)); // NOI18N
+
+        javax.swing.GroupLayout jPanel3Layout = new javax.swing.GroupLayout(jPanel3);
+        jPanel3.setLayout(jPanel3Layout);
+        jPanel3Layout.setHorizontalGroup(
+            jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGap(0, 0, Short.MAX_VALUE)
+        );
+        jPanel3Layout.setVerticalGroup(
+            jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGap(0, 61, Short.MAX_VALUE)
+        );
+
+        noCheckinLabel1.setBackground(new java.awt.Color(255, 255, 255));
+        noCheckinLabel1.setFont(new java.awt.Font("Comic Sans MS", 0, 16)); // NOI18N
+        noCheckinLabel1.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        noCheckinLabel1.setLabelFor(fromComboBox);
+        noCheckinLabel1.setText("Search For");
+
+        noCheckinLabel2.setBackground(new java.awt.Color(255, 255, 255));
+        noCheckinLabel2.setFont(new java.awt.Font("Comic Sans MS", 0, 16)); // NOI18N
+        noCheckinLabel2.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        noCheckinLabel2.setLabelFor(fromComboBox);
+        noCheckinLabel2.setText("Point Of Interest");
+
+        noCheckinLabel3.setBackground(new java.awt.Color(255, 255, 255));
+        noCheckinLabel3.setFont(new java.awt.Font("Comic Sans MS", 0, 16)); // NOI18N
+        noCheckinLabel3.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        noCheckinLabel3.setLabelFor(fromComboBox);
+        noCheckinLabel3.setText("Proximity");
+
+        proximityComboBox.setFont(new java.awt.Font("Comic Sans MS", 0, 16)); // NOI18N
+        proximityComboBox.setMaximumRowCount(8);
+        proximityComboBox.setModel(new javax.swing.DefaultComboBoxModel(new String[] {"Miles", "5", "10", "20", "30", "50" }));
+        proximityComboBox.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                proximityComboBoxMouseClicked(evt);
+            }
+        });
+        proximityComboBox.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                proximityComboBoxActionPerformed(evt);
+            }
+        });
+
+        searchForComboBox.setFont(new java.awt.Font("Comic Sans MS", 0, 16)); // NOI18N
+        searchForComboBox.setMaximumRowCount(8);
+        searchForComboBox.setModel(new javax.swing.DefaultComboBoxModel(new String[] {"Between AND OR", "AND", "OR"}));
+        searchForComboBox.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                searchForComboBoxMouseClicked(evt);
+            }
+        });
+        searchForComboBox.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                searchForComboBoxActionPerformed(evt);
+            }
+        });
+
+        pointOfInterestComboBox.setFont(new java.awt.Font("Comic Sans MS", 0, 16)); // NOI18N
+        pointOfInterestComboBox.setMaximumRowCount(8);
+        pointOfInterestComboBox.setModel(new javax.swing.DefaultComboBoxModel(new String[] {"Address", "3799 S Las Vegas Blvd Eastside Las Vegas, NV 89119", "6002 S Durango Dr Ste 100 Spring Valley Las Vegas, NV 89113", "1801 E Baseline Rd, #101 Ste 101 Tempe, AZ 85283", "1033 S Park St Bay Creek Madison, WI 53715", "University Center II Lot Phoenix, AZ 85008"}));
+        pointOfInterestComboBox.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                pointOfInterestComboBoxMouseClicked(evt);
+            }
+        });
+        pointOfInterestComboBox.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                pointOfInterestComboBoxActionPerformed(evt);
+            }
+        });
+
+        javax.swing.GroupLayout jPanel4Layout = new javax.swing.GroupLayout(jPanel4);
+        jPanel4.setLayout(jPanel4Layout);
+        jPanel4Layout.setHorizontalGroup(
+            jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jPanel4Layout.createSequentialGroup()
+                .addContainerGap()
+                .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(noCheckinLabel2)
+                    .addComponent(pointOfInterestComboBox, javax.swing.GroupLayout.PREFERRED_SIZE, 419, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(noCheckinLabel3)
+                    .addComponent(proximityComboBox, javax.swing.GroupLayout.PREFERRED_SIZE, 129, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addGap(46, 46, 46)
+                .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(searchForComboBox, javax.swing.GroupLayout.PREFERRED_SIZE, 137, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(noCheckinLabel1))
+                .addContainerGap())
+        );
+        jPanel4Layout.setVerticalGroup(
+            jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jPanel4Layout.createSequentialGroup()
+                .addGap(8, 8, 8)
+                .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(noCheckinLabel2)
+                    .addComponent(noCheckinLabel1)
+                    .addComponent(noCheckinLabel3))
+                .addGap(18, 18, 18)
+                .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(proximityComboBox, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(searchForComboBox, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(pointOfInterestComboBox, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+        );
+
         checkinPanel1.setBackground(new java.awt.Color(255, 255, 255));
         checkinPanel1.setAutoscrolls(true);
 
@@ -858,7 +1014,7 @@ public class HW4 extends javax.swing.JFrame {
         toLabel1.setLabelFor(toComboBox);
         toLabel1.setText("Review Count");
 
-        memberSinceDateBox.setDateFormatString("MM/yyyy");
+        memberSinceDateBox.setDateFormatString("yyyy-MM");
         memberSinceDateBox.addPropertyChangeListener(new java.beans.PropertyChangeListener() {
             public void propertyChange(java.beans.PropertyChangeEvent evt) {
                 memberSinceDateBoxPropertyChange(evt);
@@ -951,6 +1107,32 @@ public class HW4 extends javax.swing.JFrame {
             }
         });
 
+        toLabel5.setBackground(new java.awt.Color(255, 255, 255));
+        toLabel5.setFont(new java.awt.Font("Comic Sans MS", 0, 16)); // NOI18N
+        toLabel5.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        toLabel5.setLabelFor(toComboBox);
+        toLabel5.setText("Number of Votes");
+
+        numberOfVotesComboBox.setModel(new javax.swing.DefaultComboBoxModel(new String[] {"Select =,>,<", "=", ">", "<" }));
+        numberOfVotesComboBox.setToolTipText("");
+        numberOfVotesComboBox.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                numberOfVotesComboBoxActionPerformed(evt);
+            }
+        });
+
+        noOfVotesValueTextField.setPreferredSize(new java.awt.Dimension(78, 26));
+        noOfVotesValueTextField.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                noOfVotesValueTextFieldActionPerformed(evt);
+            }
+        });
+        noOfVotesValueTextField.addKeyListener(new java.awt.event.KeyAdapter() {
+            public void keyTyped(java.awt.event.KeyEvent evt) {
+                noOfVotesValueTextFieldKeyTyped(evt);
+            }
+        });
+
         javax.swing.GroupLayout checkinPanel1Layout = new javax.swing.GroupLayout(checkinPanel1);
         checkinPanel1.setLayout(checkinPanel1Layout);
         checkinPanel1Layout.setHorizontalGroup(
@@ -963,14 +1145,20 @@ public class HW4 extends javax.swing.JFrame {
                         .addGap(57, 57, 57)
                         .addComponent(memberSinceDateBox, javax.swing.GroupLayout.PREFERRED_SIZE, 175, javax.swing.GroupLayout.PREFERRED_SIZE))
                     .addGroup(checkinPanel1Layout.createSequentialGroup()
-                        .addGroup(checkinPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
-                            .addComponent(toLabel4, javax.swing.GroupLayout.PREFERRED_SIZE, 101, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addGroup(checkinPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                .addComponent(toLabel1)
-                                .addComponent(toLabel2)
-                                .addComponent(toLabel3)))
+                        .addGroup(checkinPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addGroup(checkinPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                                .addComponent(toLabel4, javax.swing.GroupLayout.PREFERRED_SIZE, 101, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addGroup(checkinPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                    .addComponent(toLabel1)
+                                    .addComponent(toLabel2)
+                                    .addComponent(toLabel3)))
+                            .addComponent(toLabel5))
                         .addGap(23, 23, 23)
                         .addGroup(checkinPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                            .addGroup(checkinPanel1Layout.createSequentialGroup()
+                                .addComponent(numberOfVotesComboBox, javax.swing.GroupLayout.PREFERRED_SIZE, 109, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                .addComponent(noOfVotesValueTextField, javax.swing.GroupLayout.PREFERRED_SIZE, 76, javax.swing.GroupLayout.PREFERRED_SIZE))
                             .addGroup(checkinPanel1Layout.createSequentialGroup()
                                 .addGroup(checkinPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                                     .addComponent(reviewCountComboBox, javax.swing.GroupLayout.PREFERRED_SIZE, 109, javax.swing.GroupLayout.PREFERRED_SIZE)
@@ -982,7 +1170,7 @@ public class HW4 extends javax.swing.JFrame {
                                     .addComponent(numberOfFriendsValueTextField, javax.swing.GroupLayout.PREFERRED_SIZE, 76, javax.swing.GroupLayout.PREFERRED_SIZE)
                                     .addComponent(reviewCountValueTextField, javax.swing.GroupLayout.PREFERRED_SIZE, 76, javax.swing.GroupLayout.PREFERRED_SIZE)))
                             .addComponent(andOrComboBox, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))))
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                .addContainerGap(351, Short.MAX_VALUE))
         );
         checkinPanel1Layout.setVerticalGroup(
             checkinPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -1008,91 +1196,15 @@ public class HW4 extends javax.swing.JFrame {
                     .addComponent(avgStarComboBox, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addGap(18, 18, 18)
                 .addGroup(checkinPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(toLabel5)
+                    .addComponent(numberOfVotesComboBox, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(noOfVotesValueTextField, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(checkinPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(toLabel4, javax.swing.GroupLayout.DEFAULT_SIZE, 34, Short.MAX_VALUE)
                     .addComponent(andOrComboBox, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addContainerGap())
         );
-
-        categoryPanel.setBackground(new java.awt.Color(255, 255, 255));
-
-        DefaultListModel<String> listModel = new DefaultListModel<String>();
-        jList1.setModel(listModel);
-        jScrollPane1.setViewportView(jList1);
-
-        javax.swing.GroupLayout categoryPanelLayout = new javax.swing.GroupLayout(categoryPanel);
-        categoryPanel.setLayout(categoryPanelLayout);
-        categoryPanelLayout.setHorizontalGroup(
-            categoryPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(categoryPanelLayout.createSequentialGroup()
-                .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 246, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(0, 118, Short.MAX_VALUE))
-        );
-        categoryPanelLayout.setVerticalGroup(
-            categoryPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(categoryPanelLayout.createSequentialGroup()
-                .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 541, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(0, 961, Short.MAX_VALUE))
-        );
-
-        jScrollPane2.setViewportView(categoryPanel);
-
-        DefaultTableModel dtm = new DefaultTableModel(0, 0);
-        resultTable.setModel(dtm
-        );
-        jScrollPane8.setViewportView(resultTable);
-
-        jPanel1.setBackground(new java.awt.Color(255, 255, 255));
-
-        queryLabel.setBackground(new java.awt.Color(255, 255, 255));
-        queryLabel.setFont(new java.awt.Font("Comic Sans MS", 0, 18)); // NOI18N
-        queryLabel.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
-        queryLabel.setLabelFor(executeQueryButton);
-        queryLabel.setText("");
-        queryLabel.setVerticalAlignment(javax.swing.SwingConstants.TOP);
-
-        javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
-        jPanel1.setLayout(jPanel1Layout);
-        jPanel1Layout.setHorizontalGroup(
-            jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(queryLabel, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, 749, Short.MAX_VALUE)
-        );
-        jPanel1Layout.setVerticalGroup(
-            jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(queryLabel, javax.swing.GroupLayout.DEFAULT_SIZE, 247, Short.MAX_VALUE)
-        );
-
-        jPanel2.setBackground(new java.awt.Color(255, 255, 153));
-
-        jButton2.setBackground(new java.awt.Color(255, 255, 153));
-        jButton2.setText("User");
-        jButton2.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jButton2ActionPerformed(evt);
-            }
-        });
-
-        javax.swing.GroupLayout jPanel2Layout = new javax.swing.GroupLayout(jPanel2);
-        jPanel2.setLayout(jPanel2Layout);
-        jPanel2Layout.setHorizontalGroup(
-            jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(jPanel2Layout.createSequentialGroup()
-                .addComponent(jButton2, javax.swing.GroupLayout.PREFERRED_SIZE, 800, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(0, 0, Short.MAX_VALUE))
-        );
-        jPanel2Layout.setVerticalGroup(
-            jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(jButton2, javax.swing.GroupLayout.DEFAULT_SIZE, 61, Short.MAX_VALUE)
-        );
-
-        executeQueryButton.setText("Execute Query");
-        executeQueryButton.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                executeQueryButtonActionPerformed(evt);
-            }
-        });
-
-        jPanel3.setBackground(new java.awt.Color(255, 255, 153));
-        jPanel3.setFont(new java.awt.Font("Comic Sans MS", 0, 18)); // NOI18N
 
         jButton1.setBackground(new java.awt.Color(255, 255, 153));
         jButton1.setText("Business");
@@ -1102,112 +1214,6 @@ public class HW4 extends javax.swing.JFrame {
             }
         });
 
-        javax.swing.GroupLayout jPanel3Layout = new javax.swing.GroupLayout(jPanel3);
-        jPanel3.setLayout(jPanel3Layout);
-        jPanel3Layout.setHorizontalGroup(
-            jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(jButton1, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-        );
-        jPanel3Layout.setVerticalGroup(
-            jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(jButton1, javax.swing.GroupLayout.DEFAULT_SIZE, 61, Short.MAX_VALUE)
-        );
-
-        noCheckinLabel1.setBackground(new java.awt.Color(255, 255, 255));
-        noCheckinLabel1.setFont(new java.awt.Font("Comic Sans MS", 0, 16)); // NOI18N
-        noCheckinLabel1.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
-        noCheckinLabel1.setLabelFor(fromComboBox);
-        noCheckinLabel1.setText("Search For");
-
-        noCheckinLabel2.setBackground(new java.awt.Color(255, 255, 255));
-        noCheckinLabel2.setFont(new java.awt.Font("Comic Sans MS", 0, 16)); // NOI18N
-        noCheckinLabel2.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
-        noCheckinLabel2.setLabelFor(fromComboBox);
-        noCheckinLabel2.setText("Point Of Interest");
-
-        noCheckinLabel3.setBackground(new java.awt.Color(255, 255, 255));
-        noCheckinLabel3.setFont(new java.awt.Font("Comic Sans MS", 0, 16)); // NOI18N
-        noCheckinLabel3.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
-        noCheckinLabel3.setLabelFor(fromComboBox);
-        noCheckinLabel3.setText("Proximity");
-
-        fromComboBox1.setFont(new java.awt.Font("Comic Sans MS", 0, 16)); // NOI18N
-        fromComboBox1.setMaximumRowCount(8);
-        fromComboBox1.setModel(new javax.swing.DefaultComboBoxModel(new String[] {"Day", "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday" }));
-        fromComboBox1.addMouseListener(new java.awt.event.MouseAdapter() {
-            public void mouseClicked(java.awt.event.MouseEvent evt) {
-                fromComboBox1MouseClicked(evt);
-            }
-        });
-        fromComboBox1.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                fromComboBox1ActionPerformed(evt);
-            }
-        });
-
-        fromComboBox2.setFont(new java.awt.Font("Comic Sans MS", 0, 16)); // NOI18N
-        fromComboBox2.setMaximumRowCount(8);
-        fromComboBox2.setModel(new javax.swing.DefaultComboBoxModel(new String[] {"Day", "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday" }));
-        fromComboBox2.addMouseListener(new java.awt.event.MouseAdapter() {
-            public void mouseClicked(java.awt.event.MouseEvent evt) {
-                fromComboBox2MouseClicked(evt);
-            }
-        });
-        fromComboBox2.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                fromComboBox2ActionPerformed(evt);
-            }
-        });
-
-        fromComboBox3.setFont(new java.awt.Font("Comic Sans MS", 0, 16)); // NOI18N
-        fromComboBox3.setMaximumRowCount(8);
-        fromComboBox3.setModel(new javax.swing.DefaultComboBoxModel(new String[] {"Day", "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday" }));
-        fromComboBox3.addMouseListener(new java.awt.event.MouseAdapter() {
-            public void mouseClicked(java.awt.event.MouseEvent evt) {
-                fromComboBox3MouseClicked(evt);
-            }
-        });
-        fromComboBox3.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                fromComboBox3ActionPerformed(evt);
-            }
-        });
-
-        javax.swing.GroupLayout jPanel4Layout = new javax.swing.GroupLayout(jPanel4);
-        jPanel4.setLayout(jPanel4Layout);
-        jPanel4Layout.setHorizontalGroup(
-            jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(jPanel4Layout.createSequentialGroup()
-                .addContainerGap()
-                .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(noCheckinLabel2)
-                    .addComponent(fromComboBox3, javax.swing.GroupLayout.PREFERRED_SIZE, 313, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 29, Short.MAX_VALUE)
-                .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(noCheckinLabel3)
-                    .addComponent(fromComboBox1, javax.swing.GroupLayout.PREFERRED_SIZE, 129, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addGap(66, 66, 66)
-                .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(fromComboBox2, javax.swing.GroupLayout.PREFERRED_SIZE, 231, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(noCheckinLabel1))
-                .addContainerGap())
-        );
-        jPanel4Layout.setVerticalGroup(
-            jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(jPanel4Layout.createSequentialGroup()
-                .addGap(8, 8, 8)
-                .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(noCheckinLabel2)
-                    .addComponent(noCheckinLabel1)
-                    .addComponent(noCheckinLabel3))
-                .addGap(18, 18, 18)
-                .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(fromComboBox1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(fromComboBox2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(fromComboBox3, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-        );
-
         javax.swing.GroupLayout dbCategoryLayout = new javax.swing.GroupLayout(dbCategory);
         dbCategory.setLayout(dbCategoryLayout);
         dbCategoryLayout.setHorizontalGroup(
@@ -1215,10 +1221,10 @@ public class HW4 extends javax.swing.JFrame {
             .addGroup(dbCategoryLayout.createSequentialGroup()
                 .addContainerGap()
                 .addGroup(dbCategoryLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jPanel3, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addGroup(dbCategoryLayout.createSequentialGroup()
-                        .addGroup(dbCategoryLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addGroup(dbCategoryLayout.createSequentialGroup()
+                        .addGroup(dbCategoryLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
+                            .addComponent(jButton1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                            .addGroup(javax.swing.GroupLayout.Alignment.LEADING, dbCategoryLayout.createSequentialGroup()
                                 .addGroup(dbCategoryLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
                                     .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 0, Short.MAX_VALUE)
                                     .addComponent(categoryLabel, javax.swing.GroupLayout.DEFAULT_SIZE, 261, Short.MAX_VALUE))
@@ -1232,27 +1238,31 @@ public class HW4 extends javax.swing.JFrame {
                                         .addComponent(checkinLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 251, javax.swing.GroupLayout.PREFERRED_SIZE)
                                         .addGap(18, 18, 18)
                                         .addComponent(jLabel4, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))))
-                            .addComponent(jPanel2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addGroup(dbCategoryLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
-                                .addComponent(checkinPanel1, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                .addComponent(jPanel4, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))
+                            .addComponent(jPanel4, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                            .addComponent(jPanel2, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addComponent(jPanel3, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                    .addGroup(dbCategoryLayout.createSequentialGroup()
+                        .addComponent(checkinPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addGap(0, 0, Short.MAX_VALUE)))
-                .addGap(18, 18, 18)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(dbCategoryLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
                     .addComponent(jPanel1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addComponent(jLabel6, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addComponent(jScrollPane8)
                     .addComponent(jLabel5, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addComponent(executeQueryButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                .addContainerGap())
         );
         dbCategoryLayout.setVerticalGroup(
             dbCategoryLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(dbCategoryLayout.createSequentialGroup()
                 .addContainerGap()
-                .addGroup(dbCategoryLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                    .addComponent(jPanel3, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(executeQueryButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                .addGroup(dbCategoryLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(dbCategoryLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                        .addComponent(jPanel3, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addComponent(executeQueryButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                    .addComponent(jButton1, javax.swing.GroupLayout.DEFAULT_SIZE, 61, Short.MAX_VALUE))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(dbCategoryLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(categoryLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 71, javax.swing.GroupLayout.PREFERRED_SIZE)
@@ -1260,7 +1270,14 @@ public class HW4 extends javax.swing.JFrame {
                     .addComponent(jLabel5, javax.swing.GroupLayout.PREFERRED_SIZE, 52, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(jLabel4, javax.swing.GroupLayout.PREFERRED_SIZE, 71, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 26, Short.MAX_VALUE)
-                .addGroup(dbCategoryLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                .addGroup(dbCategoryLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(dbCategoryLayout.createSequentialGroup()
+                        .addComponent(jScrollPane8, javax.swing.GroupLayout.PREFERRED_SIZE, 607, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addComponent(jLabel6, javax.swing.GroupLayout.PREFERRED_SIZE, 53, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                     .addGroup(dbCategoryLayout.createSequentialGroup()
                         .addGroup(dbCategoryLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addGroup(dbCategoryLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
@@ -1269,17 +1286,11 @@ public class HW4 extends javax.swing.JFrame {
                             .addComponent(reviewPanel, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(jPanel4, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(jPanel2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                    .addGroup(dbCategoryLayout.createSequentialGroup()
-                        .addComponent(jScrollPane8, javax.swing.GroupLayout.PREFERRED_SIZE, 607, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                        .addComponent(jLabel6, javax.swing.GroupLayout.PREFERRED_SIZE, 53, javax.swing.GroupLayout.PREFERRED_SIZE)))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(dbCategoryLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
-                    .addComponent(checkinPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                        .addGap(18, 18, Short.MAX_VALUE)
+                        .addComponent(jPanel2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addGap(18, 18, 18)
+                        .addComponent(checkinPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addContainerGap())))
         );
 
         jScrollPane6.setViewportView(dbCategory);
@@ -1440,190 +1451,200 @@ public class HW4 extends javax.swing.JFrame {
 
         //nothing is selected
         if (finalCat.isEmpty()) {
-//            if(!memberSince.isEmpty() || !operReviewCount.isEmpty() || !operNoOfFriends.isEmpty() || !operAvgStar.isEmpty()
-//                        || !valueReviewCount.isEmpty() || !valueNoOfFriends.isEmpty() || !valueAvgStar.isEmpty() || !andOrAttribute.isEmpty()){
-//                
-//            try {
-//                Class.forName("oracle.jdbc.driver.OracleDriver");
-//            } catch (ClassNotFoundException ex) {
-//                Logger.getLogger(HW3.class.getName()).log(Level.SEVERE, null, ex);
-//            }
-//            try {
-//                stm = con.createStatement();
-//            } catch (SQLException ex) {
-//                Logger.getLogger(HW3.class.getName()).log(Level.SEVERE, null, ex);
-//            }
-//        if(andOrAttribute.contains("AND")){
-//            boolean andflag=false;
-//                StringBuffer userQuery = new StringBuffer(
-//                        "SELECT USER_NAME,YELPING_DATE,REVIEW_COUNT,NUMBER_FRINDS,AVG_STARS\n"
-//                        + "   FROM B_USER\n"
-//                        + "   WHERE ");
-//                if(!memberSince.isEmpty())
-//                {
-//                    andflag=true;
-//                userQuery.append("YELPING_DATE> TO_DATE ('"+memberSince+"','mm/rrrr')");
-//                }
-//                if(!valueReviewCount.isEmpty())
-//                {
-//                    if(andflag){
-//                     userQuery.append("AND REVIEW_COUNT"+operReviewCount+"'"+valueReviewCount+"'");
-//                    }
-//                    else {
-//                        andflag=true;
-//                         userQuery.append("REVIEW_COUNT"+operReviewCount+"'"+valueReviewCount+"'");
-//                    }
-//               
-//                }
-//                  if(!valueNoOfFriends.isEmpty())
-//                {
-//                    if(andflag){
-//                     userQuery.append("AND NUMBER_FRINDS"+operNoOfFriends+"'"+valueNoOfFriends+"'");
-//                    }
-//                    else {
-//                        andflag=true;
-//                         userQuery.append("NUMBER_FRINDS"+operNoOfFriends+"'"+valueNoOfFriends+"'");
-//                    }
-//               
-//                }
-//                  
-//                  if(!valueAvgStar.isEmpty())
-//                {
-//                    Double doubleValueAvgStar=Double.parseDouble(valueAvgStar);
-//                    if(andflag){
-//                     userQuery.append("AND AVG_STARS"+operAvgStar+"'"+doubleValueAvgStar+"'");
-//                    }
-//                    else {
-//                        andflag=true;
-//                         userQuery.append("AVG_STARS"+operAvgStar+"'"+doubleValueAvgStar+"'");
-//                    }
-//               
-//                }
-//                  queryLabel.setText("<html><p>"+userQuery.toString()+"</p></html>");
-//                  
-//                                 ResultSet userResultSet = null;
-//                try {
-//                    userResultSet = stm.executeQuery(userQuery.toString());
-//                } catch (SQLException ex) {
-//                    Logger.getLogger(HW3.class.getName()).log(Level.SEVERE, null, ex);
-//                }
-//                             resultTable.setModel(dtm);
-//                    
-//                    String header[] = new String[] { "User Name", "Yelping Date", "Review Count",
-//                    "Number of Friends", "Avg Stars"};
-//
-//                    // add header in table model     
-//                    dtm.setColumnIdentifiers(header);
-//                    
-//                try {
-//                    while (userResultSet.next()) {
-//                        Object[] row = new Object[userResultSet.getMetaData().getColumnCount()];
-//                        for (int i = 0; i < row.length; i++) {
-//                            row[i] = userResultSet.getObject(i+1);
+            if (!Address.isEmpty() && !proximity.isEmpty()) {
+
+                if (Address.contains("3799 S Las Vegas Blvd Eastside Las Vegas, NV 89119")) {
+                    longitude = -115.16768879999999;
+                    latitude = 36.103017899999998;
+                }
+
+                if (Address.equalsIgnoreCase("6002 S Durango Dr Ste 100 Spring Valley Las Vegas, NV 89113")) {
+                    longitude = -115.27906539999999;
+                    latitude = 36.079256100000002;
+                }
+
+                if (Address.equalsIgnoreCase("1801 E Baseline Rd, #101 Ste 101 Tempe, AZ 85283")) {
+                    longitude = -111.90860979259;
+                    latitude = 33.377052104372098;
+                }
+
+                if (Address.equalsIgnoreCase("1033 S Park St Bay Creek Madison, WI 53715")) {
+                    longitude = -89.397478300000003;
+                    latitude = 43.055539400000001;
+                }
+
+                if (Address.equalsIgnoreCase("University Center II Lot Phoenix, AZ 85008")) {
+                    longitude = -112.02540759999999;
+                    latitude = 33.451857400000002;
+                }
+                DB dbBusiness = mongoClient.getDB("business");
+                DBCollection collBusiness = dbBusiness.getCollection("business");
+
+                BasicDBList geoCoord = new BasicDBList();
+
+                geoCoord.add(longitude);
+                geoCoord.add(latitude);
+
+                BasicDBList geoParams = new BasicDBList();
+                geoParams.add(geoCoord);
+                geoParams.add(Integer.parseInt(proximity) / 1018.59);
+
+                BasicDBObject query = new BasicDBObject("loc",
+                        new BasicDBObject("$geoWithin",
+                                new BasicDBObject("$center", geoParams)
+                        )
+                );
+
+                resultTable.setModel(dtm);
+                String header[] = new String[]{"B_ID","Business", "City", "State",
+                    "Stars"};
+                dtm.setColumnIdentifiers(header);
+                DBCursor cursorForBusiness = collBusiness.find(query);
+                while (cursorForBusiness.hasNext()) {
+                    //pointInterest.add(cursorForBusiness.next());
+                    Object[] row = new Object[5];
+                    row[0] = cursorForBusiness.next().get("business_id");
+                    row[1] = cursorForBusiness.next().get("name");
+                    row[2] = cursorForBusiness.next().get("city");
+                    row[3] = cursorForBusiness.next().get("state");
+                    row[4] = cursorForBusiness.next().get("stars");
+
+                    dtm.addRow(row);
+                }
+
+            }
+
+            if (!memberSince.isEmpty() || !operReviewCount.isEmpty() || !operNoOfFriends.isEmpty() || !operAvgStar.isEmpty()
+                    || !valueReviewCount.isEmpty() || !valueNoOfFriends.isEmpty() || !valueAvgStar.isEmpty() || !andOrAttribute.isEmpty()
+                    || !operNoOfVotes.isEmpty() || !valueNoOfVotes.isEmpty()) {
+
+                DB dbUser = mongoClient.getDB("user");
+                DBCollection collUser = dbUser.getCollection("user");
+                BasicDBObject andQuery = new BasicDBObject();
+                List<BasicDBObject> obj = new ArrayList<BasicDBObject>();
+                try {
+                    if (!memberSince.isEmpty()) {
+                        obj.add(new BasicDBObject("yelping_since", memberSince));
+                    }
+                    if (!valueReviewCount.isEmpty()) {
+                        int vrc = Integer.parseInt(valueReviewCount);
+                        BasicDBObject rCount = null;
+                        if (operReviewCount.equals(">")) {
+                            rCount = new BasicDBObject("review_count", new BasicDBObject("$gt", vrc));
+                            //rCount = new BasicDBObject("$where", "review_count >" + vrc);
+                        }
+                        if (operReviewCount.equals("<")) {
+                            rCount = new BasicDBObject("review_count", new BasicDBObject("$lt", vrc));
+                            //rCount = new BasicDBObject("$where", "review_count <" + vrc);
+                        }
+                        if (operReviewCount.equals("=")) {
+                            rCount = new BasicDBObject("review_count", vrc);
+                            // rCount = new BasicDBObject("$where", "review_count =" + vrc);
+                        }
+
+                        obj.add(new BasicDBObject(rCount));
+                    }
+                    if (!valueNoOfFriends.isEmpty()) {
+                        int vnf = Integer.parseInt(valueNoOfFriends);
+                        BasicDBObject vFriends = null;
+                        if (operNoOfFriends.equals(">")) {
+                            vFriends = new BasicDBObject("$where", "this.friends.length >" + vnf);
+                        }
+                        if (operNoOfFriends.equals("<")) {
+                            vFriends = new BasicDBObject("$where", "this.friends.length <" + vnf);
+                        }
+                        if (operNoOfFriends.equals("=")) {
+                            vFriends = new BasicDBObject("$where", "this.friends.length =" + vnf);
+                        }
+
+                        obj.add(new BasicDBObject(vFriends));
+                    }
+                    if (!valueAvgStar.isEmpty()) {
+                        Double doubleValueAvgStar = Double.parseDouble(valueAvgStar);
+                        BasicDBObject avgStarValue = null;
+                        if (operAvgStar.equals(">")) {
+                            avgStarValue = new BasicDBObject("average_stars", new BasicDBObject("$gt", doubleValueAvgStar));
+                            // avgStarValue = new BasicDBObject("$where", "average_stars >" + doubleValueAvgStar);
+                        }
+                        if (operAvgStar.equals("<")) {
+                            avgStarValue = new BasicDBObject("average_stars", new BasicDBObject("$lt", doubleValueAvgStar));
+                            // avgStarValue = new BasicDBObject("$where", "average_stars <" + doubleValueAvgStar);
+                        }
+                        if (operAvgStar.equals("=")) {
+                            avgStarValue = new BasicDBObject("average_stars", doubleValueAvgStar);
+                            // avgStarValue = new BasicDBObject("$where", "average_stars =" + doubleValueAvgStar);
+                        }
+
+                        obj.add(new BasicDBObject(avgStarValue));
+
+                    }
+                    if (!valueNoOfVotes.isEmpty()) {
+//                                BasicDBObject noOfVotesValue = null;
+//                                 if (operNoOfVotes.equals(">")) {
+//                            noOfVotesValue = new BasicDBObject("average_stars", new BasicDBObject("$gt", valueNoOfVotes));
 //                        }
-//                        
-//                        dtm.addRow(row);
-//                        
-//                    }
-//                } catch (SQLException ex) {
-//                    Logger.getLogger(HW3.class.getName()).log(Level.SEVERE, null, ex);
-//                }
-//                               
-//
-//                             
-//                
-//            }
-//        else {
-//              
-//            boolean andflag=false;
-//                StringBuffer userQuery = new StringBuffer(
-//                        "SELECT USER_NAME,YELPING_DATE,REVIEW_COUNT,NUMBER_FRINDS,AVG_STARS\n"
-//                        + "   FROM B_USER\n"
-//                        + "   WHERE ");
-//                if(!memberSince.isEmpty())
-//                {
-//                    andflag=true;
-//                userQuery.append("YELPING_DATE> TO_DATE ('"+memberSince+"','mm/rrrr')");
-//                }
-//                if(!valueReviewCount.isEmpty())
-//                {
-//                    if(andflag){
-//                     userQuery.append("OR REVIEW_COUNT"+operReviewCount+"'"+valueReviewCount+"'");
-//                    }
-//                    else {
-//                        andflag=true;
-//                         userQuery.append("REVIEW_COUNT"+operReviewCount+"'"+valueReviewCount+"'");
-//                    }
-//               
-//                }
-//                  if(!valueNoOfFriends.isEmpty())
-//                {
-//                    if(andflag){
-//                     userQuery.append("OR NUMBER_FRINDS"+operNoOfFriends+"'"+valueNoOfFriends+"'");
-//                    }
-//                    else {
-//                        andflag=true;
-//                         userQuery.append("NUMBER_FRINDS"+operNoOfFriends+"'"+valueNoOfFriends+"'");
-//                    }
-//               
-//                }
-//                  
-//                  if(!valueAvgStar.isEmpty())
-//                {
-//                    Double doubleValueAvgStar=Double.parseDouble(valueAvgStar);
-//                    if(andflag){
-//                     userQuery.append("OR AVG_STARS"+operAvgStar+"'"+doubleValueAvgStar+"'");
-//                    }
-//                    else {
-//                        andflag=true;
-//                         userQuery.append("AVG_STARS"+operAvgStar+"'"+doubleValueAvgStar+"'");
-//                    }
-//               
-//                }
-//               
-//                     queryLabel.setText("<html><p>"+userQuery.toString()+"</p></html>");
-//                                try (ResultSet userResultSet = stm.executeQuery(userQuery.toString())) {
-//                             resultTable.setModel(dtm);
-//                    
-//                    String header[] = new String[] { "User Name", "Yelping Date", "Review Count",
-//                    "Number of Friends", "Avg Stars"};
-//
-//                    // add header in table model     
-//                    dtm.setColumnIdentifiers(header);
-//                    
-//                    while (userResultSet.next()) {
-//                        Object[] row = new Object[userResultSet.getMetaData().getColumnCount()];
-//                        for (int i = 0; i < row.length; i++) {
-//                            row[i] = userResultSet.getObject(i+1);
+//                        if (operNoOfVotes.equals("<")) {
+//                            noOfVotesValue = new BasicDBObject("average_stars", new BasicDBObject("$lt", valueNoOfVotes));
 //                        }
+//                        if (operNoOfVotes.equals("=")) {
+//                            noOfVotesValue = new BasicDBObject("average_stars", new BasicDBObject("$eq", valueNoOfVotes));
+//                        }   
 //                        
-//                        dtm.addRow(row);
-//                        
-//                    }
-//                                }
-//
-//                             catch (SQLException ex) {
-//                                Logger.getLogger(HW3.class.getName()).log(Level.SEVERE, null, ex);
-//                            }
-//
-//            
-//        }
-//
-//
-//        }
-//            else {
-            queryLabel.setText("Please select atleast one category from business");
-//                    }
+//                        obj.add(new BasicDBObject(noOfVotesValue));
+
+                    }
+                    System.out.println(andOrAttribute);
+                    if (andOrAttribute.equalsIgnoreCase("AND")) {
+                        System.out.println("Here");
+                        andQuery.put("$and", obj);
+                    } else {
+                        andQuery.put("$or", obj);
+                    }
+                    queryLabel.setText("<html><p>" + andQuery.toString() + "</p></html>");
+                    List<DBObject> outputMyList = new ArrayList<DBObject>();
+                    DBCursor cursor = collUser.find(andQuery);
+                    while (cursor.hasNext()) {
+                        //System.out.println(cursor.next());
+                        outputMyList.add(cursor.next());
+                    }
+
+                    resultTable.setModel(dtm);
+                    String header[] = new String[]{"U_ID","User Name", "Yelping Since", "Avg Stars",
+                        "Review Count"};
+                    // add header in table model     
+                    dtm.setColumnIdentifiers(header);
+                    for (DBObject temp : outputMyList) {
+                        //System.out.println("Business Name : " + temp.get("name") + " Category :  " + temp.get("categories"));
+                        Object[] row = new Object[5];
+                        row[0] = temp.get("user_id");
+                        row[1] = temp.get("name");
+                        row[2] = temp.get("yelping_since");
+                        row[3] = temp.get("average_stars");
+                        row[4] = temp.get("review_count");
+
+                        dtm.addRow(row);
+                    }
+
+                } catch (Exception e) {
+
+                }
+
+            } else {
+                queryLabel.setText("Please select atleast one category from business");
+            }
         } //only cat selected
+        //////////////////////////Business//////////////////////////////////////////////////////////
         if (finalCat.size() > 0) {
             DB dbBusiness = mongoClient.getDB("business");
             DBCollection collBusiness = dbBusiness.getCollection("business");
             if (!fromCheckin.isEmpty() && !fromCheckinHour.isEmpty() && !toCheckin.isEmpty() && !toCheckinHour.isEmpty()
                     && !operationCheckin.isEmpty() && !valueCheckin.isEmpty()) {
-                        DB dbCheckin = mongoClient.getDB("checkin");
-                        DBCollection collCheckin = dbCheckin.getCollection("checkin");
+                DB dbCheckin = mongoClient.getDB("checkin");
+                DBCollection collCheckin = dbCheckin.getCollection("checkin");
+
                 if (!fromReview.isEmpty() && !toReview.isEmpty() && !operationStar.isEmpty() && !valueStar.isEmpty()
                         && !operationVote.isEmpty() && !valueVote.isEmpty()) {
+                    //////////////////////Category, Checkin and Review///////////////////////////////////////////////////
                     DateFormat format = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.ENGLISH);
                     String fromDate1 = fromReview;
                     String fromdate = fromDate1 + "T00:00:00Z";
@@ -1631,7 +1652,7 @@ public class HW4 extends javax.swing.JFrame {
                     String todate = toDate1 + "T00:00:00Z";
                     int starValue = Integer.parseInt(valueStar);
                     int voteValue = Integer.parseInt(valueVote);
-
+                    StringBuffer finalQuery = new StringBuffer();
                     DB dbReview = mongoClient.getDB("review");
                     DBCollection collReview = dbReview.getCollection("review");
                     int j = 0;
@@ -1640,361 +1661,474 @@ public class HW4 extends javax.swing.JFrame {
                     HashMap<String, Integer> tempCheckin = new HashMap<String, Integer>();
                     ArrayList<String> finalCheckinBid = new ArrayList<String>();
 
-                   
-                        ArrayList<CheckinDetail> checkinList = new ArrayList<CheckinDetail>();
-                        //System.out.println("I am in checkin box");
-                        String[] arrayDays = {"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"};
-                        for (int i = 0; i < arrayDays.length; i++) {
-                            if (fromCheckin == arrayDays[i]) {
-                                j = i;
-                            } else if (toCheckin == arrayDays[i]) {
-                                l = i;
-                            }
+                    ArrayList<CheckinDetail> checkinList = new ArrayList<CheckinDetail>();
+                    //System.out.println("I am in checkin box");
+                    String[] arrayDays = {"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"};
+                    for (int i = 0; i < arrayDays.length; i++) {
+                        if (fromCheckin == arrayDays[i]) {
+                            j = i;
+                        } else if (toCheckin == arrayDays[i]) {
+                            l = i;
                         }
-                        ArrayList<Integer> days = new ArrayList<Integer>();
-                        days.add(j);
-                        int temfromday = j;
-                        days.add(l);
-        
-                        int difference = CheckForDay(fromCheckin, toCheckin);
-                        if (difference > 0) {
-                            for (int k = 0; k < difference; k++) {
-                                j = j + 1;
-                                if (j == 7) {
-                                    j = 0;
-                                }
-                                days.add(j);
+                    }
+                    ArrayList<Integer> days = new ArrayList<Integer>();
+                    days.add(j);
+                    int temfromday = j;
+                    days.add(l);
 
+                    int difference = CheckForDay(fromCheckin, toCheckin);
+                    if (difference > 0) {
+                        for (int k = 0; k < difference; k++) {
+                            j = j + 1;
+                            if (j == 7) {
+                                j = 0;
                             }
+                            days.add(j);
+
                         }
-                        List<DBObject> categoryIdList = new ArrayList<DBObject>();
-                         for (String t : finalCat) {
+                    }
+                    List<DBObject> categoryIdList = new ArrayList<DBObject>();
+                    for (String t : finalCat) {
                         BasicDBObject whereQueryBusiness = new BasicDBObject();
                         BasicDBObject fieldsBusiness = new BasicDBObject();
                         fieldsBusiness.put("business_id", 1);
                         whereQueryBusiness.put("categories", t);
                         DBCursor cursorForBusiness = collBusiness.find(whereQueryBusiness, fieldsBusiness);
+                        finalQuery.append(whereQueryBusiness);
                         while (cursorForBusiness.hasNext()) {
                             int i = 1;
                             categoryIdList.add(cursorForBusiness.next());
                             i++;
                         }
-                          }//for FINALCAT
-                          List<DBObject> checkinCategoryIdList = new ArrayList<DBObject>();
-                        for (DBObject s : categoryIdList) {
-                            //System.out.println(s.get("business_id"));
-                            BasicDBObject whereQueryCheckin = new BasicDBObject();
-                            whereQueryCheckin.put("business_id", s.get("business_id"));
-                            DBCursor cursorForCheckin = collCheckin.find(whereQueryCheckin);
-                            while (cursorForCheckin.hasNext()) {
-                                int i = 1;
-                                checkinCategoryIdList.add(cursorForCheckin.next());
-                                i++;
-                            }
-                              }//for DBObject s:categoryIdList
-                            for (DBObject u : checkinCategoryIdList) {
-                                String full = u.get("checkin_info").toString();
-                                String a = full.replaceAll("[{}]", "");
-                                String[] b = a.split(",");
-                                for (int x = 0; x < b.length; x++) {
-                                     CheckinDetail objCheckin = new CheckinDetail();
-                                    String[] c = b[x].split(":");
-                                    
-                                        String d = c[0].replaceAll("[\"]", "");
-                                        String[] e = d.split("-");
-                                        objCheckin.b_Id = u.get("business_id").toString();
-                                        objCheckin.fromTime = Integer.parseInt(e[0].replaceAll("\\s+", ""));
-                                        objCheckin.checkinDay = Integer.parseInt(e[1].replaceAll("\\s+", ""));
-                                        objCheckin.CountValue = Integer.parseInt(c[1].replaceAll("\\s+", ""));;
-                                        checkinList.add(objCheckin);
-                                }
-                            }
+                    }//for FINALCAT
+                    List<DBObject> checkinCategoryIdList = new ArrayList<DBObject>();
+                    for (DBObject s : categoryIdList) {
+                        //System.out.println(s.get("business_id"));
+                        BasicDBObject whereQueryCheckin = new BasicDBObject();
+                        whereQueryCheckin.put("business_id", s.get("business_id"));
+                        DBCursor cursorForCheckin = collCheckin.find(whereQueryCheckin);
+                        while (cursorForCheckin.hasNext()) {
+                            int i = 1;
+                            checkinCategoryIdList.add(cursorForCheckin.next());
+                            i++;
+                        }
+                    }//for DBObject s:categoryIdList
+                    for (DBObject u : checkinCategoryIdList) {
+                        String full = u.get("checkin_info").toString();
+                        String a = full.replaceAll("[{}]", "");
+                        String[] b = a.split(",");
+                        for (int x = 0; x < b.length; x++) {
+                            CheckinDetail objCheckin = new CheckinDetail();
+                            String[] c = b[x].split(":");
 
-                      
+                            String d = c[0].replaceAll("[\"]", "");
+                            String[] e = d.split("-");
+                            objCheckin.b_Id = u.get("business_id").toString();
+                            objCheckin.fromTime = Integer.parseInt(e[0].replaceAll("\\s+", ""));
+                            objCheckin.checkinDay = Integer.parseInt(e[1].replaceAll("\\s+", ""));
+                            objCheckin.CountValue = Integer.parseInt(c[1].replaceAll("\\s+", ""));;
+                            checkinList.add(objCheckin);
+                        }
+                    }
 
-                        for (CheckinDetail e : checkinList) {
-                            for (int f : days) {
-                                if ( (f == temfromday && temfromday == e.checkinDay && Integer.parseInt(fromCheckinHour) <= e.fromTime)
-                                        || (f == l && l == e.checkinDay && Integer.parseInt(toCheckinHour) >= e.fromTime) 
-                                        || (f == e.checkinDay && f != temfromday && f != l)) {
+                    for (CheckinDetail e : checkinList) {
+                        for (int f : days) {
+                            if ((f == temfromday && temfromday == e.checkinDay && Integer.parseInt(fromCheckinHour) <= e.fromTime)
+                                    || (f == l && l == e.checkinDay && Integer.parseInt(toCheckinHour) >= e.fromTime)
+                                    || (f == e.checkinDay && f != temfromday && f != l)) {
 //                                    System.out.println(e.b_Id);
 //                                    System.out.println(e.CountValue);
-                                    if (tempCheckin.containsKey(e.b_Id)) {
-                                        tempCheckin.put(e.b_Id, tempCheckin.get(e.b_Id) + e.CountValue);
-                                    } else {
-                                            tempCheckin.put(e.b_Id, e.CountValue);
-                                    }
-                                    
+                                if (tempCheckin.containsKey(e.b_Id)) {
+                                    tempCheckin.put(e.b_Id, tempCheckin.get(e.b_Id) + e.CountValue);
+                                } else {
+                                    tempCheckin.put(e.b_Id, e.CountValue);
                                 }
+
                             }
                         }
-
-                  
+                    }
 
                     Iterator itr = tempCheckin.entrySet().iterator();
                     while (itr.hasNext()) {
                         Map.Entry entry = (Map.Entry) itr.next();
-                        if((operationCheckin.contains("="))){
-                            if(entry.getValue()== valueCheckin){
-                            finalCheckinBid.add(entry.getKey().toString());
+                        if ((operationCheckin.contains("="))) {
+                            if (entry.getValue() == valueCheckin) {
+                                finalCheckinBid.add(entry.getKey().toString());
                             }
                         }
-                        if((operationCheckin.contains("<"))){
-                            if(Integer.parseInt(entry.getValue().toString()) < Integer.parseInt(valueCheckin)){
-                            finalCheckinBid.add(entry.getKey().toString());
-                            //System.out.println("in <");
+                        if ((operationCheckin.contains("<"))) {
+                            if (Integer.parseInt(entry.getValue().toString()) < Integer.parseInt(valueCheckin)) {
+                                finalCheckinBid.add(entry.getKey().toString());
+                                //System.out.println("in <");
                             }
                         }
-                        if((operationCheckin.contains(">"))){
-                            if(Integer.parseInt(entry.getValue().toString()) > Integer.parseInt(valueCheckin)){
-                            finalCheckinBid.add(entry.getKey().toString());
-                            //System.out.println("in >");
+                        if ((operationCheckin.contains(">"))) {
+                            if (Integer.parseInt(entry.getValue().toString()) > Integer.parseInt(valueCheckin)) {
+                                finalCheckinBid.add(entry.getKey().toString());
+                                //System.out.println("in >");
                             }
-                        } 
+                        }
                     }
                     //abhi tak ki bid is in finalCheckinBid
 //                    for(String a :finalCheckinBid){
 //                    System.out.println(a);
 //                    }
-                    
-                    try{
-                         List<Object> reviewCategoryIdList = new ArrayList<Object>();
-                                                   
-                            DBObject match = new BasicDBObject("$match", 
+                    finalQuery.append("Stage{name='$match', value=Or Filter{filters=[Operator Filter{fieldName='checkin_info.2-3', operator='$exists', value=BsonBoolean{value=true}}, Operator Filter{fieldName='checkin_info.2-4', operator='$exists', value=BsonBoolean{value=true}}]}}\n"
+                            + "Document{{$group=Document{{_id=$business_id, total1=Document{{$sum=$checkin_info.2-4}}, total2=Document{{$sum=$checkin_info.2-3}}}}}}\n"
+                            + "Stage{name='$match', value=Operator Filter{fieldName='totalCheckins', operator='$gt', value=4}}");
+                    try {
+                        List<Object> reviewCategoryIdList = new ArrayList<Object>();
+
+                        DBObject match = new BasicDBObject("$match",
                                 new BasicDBObject("date",
                                         new BasicDBObject("$gt", format.parse(fromdate)).append("$lt", format.parse(todate))));
-             
-                            DBObject groupFields = new BasicDBObject("_id", "$business_id");
-                            groupFields.put("total1", new BasicDBObject("$sum", "$votes.funny"));
-                            groupFields.put("total2", new BasicDBObject("$sum", "$votes.useful"));
-                            groupFields.put("total3", new BasicDBObject("$sum", "$votes.cool"));
-                            groupFields.put("totalStars", new BasicDBObject("$sum", "$stars"));
-                            DBObject group = new BasicDBObject("$group", groupFields);
 
-                            DBObject fields = new BasicDBObject("_id", 1);
-                            BasicDBList addFields = new BasicDBList();
-                            addFields.add("$total1");
-                            addFields.add("$total2");
-                            addFields.add("$total3");
-                            fields.put("totalVotes", new BasicDBObject("$sum", addFields));
-                            fields.put("totalStars", 1);
-                            DBObject project = new BasicDBObject("$project", fields);
-                            BasicDBObject votes = null;
-                            BasicDBObject stars = null;
-                            if(operationStar.equals(">")){
-                            stars = new BasicDBObject("totalStars",new BasicDBObject("$gt",starValue));
-                            }
-                            if(operationStar.equals("<")){
-                            stars = new BasicDBObject("totalStars",new BasicDBObject("$lt",starValue));
-                            }
-                            if(operationStar.equals("=")){
-                            stars = new BasicDBObject("totalStars",new BasicDBObject("$eq",starValue));
-                            }
-                            if(operationVote.equals(">")){
-                            votes =new BasicDBObject("totalVotes",new BasicDBObject("$gt",voteValue));
-                            }
-                            if(operationVote.equals("<")){
-                            votes =new BasicDBObject("totalVotes",new BasicDBObject("$lt",voteValue));
-                            }
-                            if(operationVote.equals("=")){
-                            votes =new BasicDBObject("totalVotes",new BasicDBObject("$eq",voteValue));
-                            }
-                            List<BasicDBObject> list1 = new ArrayList<BasicDBObject>();
-                            list1.add(new BasicDBObject(votes));
-                            list1.add(new BasicDBObject(stars));
-                            DBObject votesnStars = new BasicDBObject("$and",list1 );
-                            DBObject match2 = new BasicDBObject("$match",votesnStars);
+                        DBObject groupFields = new BasicDBObject("_id", "$business_id");
+                        groupFields.put("total1", new BasicDBObject("$sum", "$votes.funny"));
+                        groupFields.put("total2", new BasicDBObject("$sum", "$votes.useful"));
+                        groupFields.put("total3", new BasicDBObject("$sum", "$votes.cool"));
+                        groupFields.put("totalStars", new BasicDBObject("$sum", "$stars"));
+                        DBObject group = new BasicDBObject("$group", groupFields);
 
-                            AggregationOutput cursorForReview = collReview.aggregate(match,group,project,match2);
-                            Iterable<DBObject> list = cursorForReview.results();
-                            Iterator<DBObject> resultSet1=list.iterator();
-                            while (resultSet1.hasNext()){  
+                        DBObject fields = new BasicDBObject("_id", 1);
+                        BasicDBList addFields = new BasicDBList();
+                        addFields.add("$total1");
+                        addFields.add("$total2");
+                        addFields.add("$total3");
+                        fields.put("totalVotes", new BasicDBObject("$sum", addFields));
+                        fields.put("totalStars", 1);
+                        DBObject project = new BasicDBObject("$project", fields);
+                        BasicDBObject votes = null;
+                        BasicDBObject stars = null;
+                        if (operationStar.equals(">")) {
+                            stars = new BasicDBObject("totalStars", new BasicDBObject("$gt", starValue));
+                        }
+                        if (operationStar.equals("<")) {
+                            stars = new BasicDBObject("totalStars", new BasicDBObject("$lt", starValue));
+                        }
+                        if (operationStar.equals("=")) {
+                            stars = new BasicDBObject("totalStars", new BasicDBObject("$eq", starValue));
+                        }
+                        if (operationVote.equals(">")) {
+                            votes = new BasicDBObject("totalVotes", new BasicDBObject("$gt", voteValue));
+                        }
+                        if (operationVote.equals("<")) {
+                            votes = new BasicDBObject("totalVotes", new BasicDBObject("$lt", voteValue));
+                        }
+                        if (operationVote.equals("=")) {
+                            votes = new BasicDBObject("totalVotes", new BasicDBObject("$eq", voteValue));
+                        }
+                        List<BasicDBObject> list1 = new ArrayList<BasicDBObject>();
+                        list1.add(new BasicDBObject(votes));
+                        list1.add(new BasicDBObject(stars));
+                        DBObject votesnStars = new BasicDBObject("$and", list1);
+                        DBObject match2 = new BasicDBObject("$match", votesnStars);
+
+                        AggregationOutput cursorForReview = collReview.aggregate(match, group, project, match2);
+                        String query33 = match + "\n" + group + "\n" + project + "\n" + match2;
+                        finalQuery.append(query33);
+
+                        Iterable<DBObject> list = cursorForReview.results();
+                        Iterator<DBObject> resultSet1 = list.iterator();
+                        while (resultSet1.hasNext()) {
 //                            System.out.println(resultSet1.next().get("_id"));
                             reviewCategoryIdList.add(resultSet1.next().get("_id"));
-                        }  
+                        }
 //                            System.out.println(reviewCategoryIdList.size());
 //                            System.out.println(finalCheckinBid.size());
-                            reviewCategoryIdList.retainAll(finalCheckinBid);
+                        reviewCategoryIdList.retainAll(finalCheckinBid);
 //                            System.out.println(reviewCategoryIdList.size());
 //                        for (Object s : reviewCategoryIdList) { 
 //                        System.out.println(s.toString());
 //                        }
-       
-                    
-                    List<DBObject> outputMyList = new ArrayList<DBObject>();
-                    BasicDBObject whereQuery = new BasicDBObject();
-                    for (Object fianlBid2 : reviewCategoryIdList) {
-//                        System.out.println(fianlBid2);
-                        whereQuery.put("business_id", fianlBid2.toString());
-                        DBCursor cursor = collBusiness.find(whereQuery);
-                        while (cursor.hasNext()) {
-                            int i = 1;
-                            //System.out.println(cursor.next());
-                            outputMyList.add(cursor.next());
-                            i++;
+
+                        if (!Address.isEmpty() && !proximity.isEmpty()) {
+
+                            if (Address.contains("3799 S Las Vegas Blvd Eastside Las Vegas, NV 89119")) {
+                                longitude = -115.16768879999999;
+                                latitude = 36.103017899999998;
+                            }
+
+                            if (Address.equalsIgnoreCase("6002 S Durango Dr Ste 100 Spring Valley Las Vegas, NV 89113")) {
+                                longitude = -115.27906539999999;
+                                latitude = 36.079256100000002;
+                            }
+
+                            if (Address.equalsIgnoreCase("1801 E Baseline Rd, #101 Ste 101 Tempe, AZ 85283")) {
+                                longitude = -111.90860979259;
+                                latitude = 33.377052104372098;
+                            }
+
+                            if (Address.equalsIgnoreCase("1033 S Park St Bay Creek Madison, WI 53715")) {
+                                longitude = -89.397478300000003;
+                                latitude = 43.055539400000001;
+                            }
+
+                            if (Address.equalsIgnoreCase("University Center II Lot Phoenix, AZ 85008")) {
+                                longitude = -112.02540759999999;
+                                latitude = 33.451857400000002;
+                            }
+
+                            List<String> pointInterest = new ArrayList<String>();
+                            BasicDBList geoCoord = new BasicDBList();
+
+                            geoCoord.add(longitude);
+                            geoCoord.add(latitude);
+
+                            BasicDBList geoParams = new BasicDBList();
+                            geoParams.add(geoCoord);
+                            geoParams.add(Integer.parseInt(proximity) / 1018.59);
+
+                            BasicDBObject query = new BasicDBObject("loc",
+                                    new BasicDBObject("$geoWithin",
+                                            new BasicDBObject("$center", geoParams)
+                                    )
+                            );
+
+                            DBCursor cursorForBusiness = collBusiness.find(query);
+                            finalQuery.append(query);
+                            while (cursorForBusiness.hasNext()) {
+                                pointInterest.add(cursorForBusiness.next().get("business_id").toString());
+
+                            }
+//                System.out.println(pointInterest.size());
+//                System.out.println(reviewCategoryIdList.size());
+                            reviewCategoryIdList.retainAll(pointInterest);
+//                System.out.println(reviewCategoryIdList.size());
                         }
+
+                        List<DBObject> outputMyList = new ArrayList<DBObject>();
+                        BasicDBObject whereQuery = new BasicDBObject();
+                        for (Object fianlBid2 : reviewCategoryIdList) {
+//                        System.out.println(fianlBid2);
+                            whereQuery.put("business_id", fianlBid2.toString());
+                            DBCursor cursor = collBusiness.find(whereQuery);
+                            while (cursor.hasNext()) {
+                                //System.out.println(cursor.next());
+                                outputMyList.add(cursor.next());
+                            }
+                        }
+                        queryLabel.setText("<html><p>" + finalQuery + "</p></html>");
+                        resultTable.setModel(dtm);
+                        String header[] = new String[]{"B_ID","Business", "City", "State",
+                            "Stars"};
+                        // add header in table model     
+                        dtm.setColumnIdentifiers(header);
+                        for (DBObject temp : outputMyList) {
+                            //System.out.println("Business Name : " + temp.get("name") + " Category :  " + temp.get("categories"));
+                            Object[] row = new Object[5];
+                            row[0] = temp.get("business_id");
+                            row[1] = temp.get("name");
+                            row[2] = temp.get("city");
+                            row[3] = temp.get("state");
+                            row[4] = temp.get("stars");
+
+                            dtm.addRow(row);
+                        }
+                    } catch (Exception e) {
+
                     }
-                    resultTable.setModel(dtm);
-
-                    String header[] = new String[]{"Business", "City", "State",
-                        "Stars"};
-
-                    // add header in table model     
-                    dtm.setColumnIdentifiers(header);
-                    for (DBObject temp : outputMyList) {
-                        //System.out.println("Business Name : " + temp.get("name") + " Category :  " + temp.get("categories"));
-                        Object[] row = new Object[5];
-                        row[0] = temp.get("name");
-                        row[1] = temp.get("city");
-                        row[2] = temp.get("state");
-                        row[3] = temp.get("stars");
-
-                        dtm.addRow(row);
-                    }
-                     }
-        catch(Exception e){
-        
-        }
                 }//review if
+                ///////////////////////////////Category and Checkin///////////////////////////////
                 else {//Check in with cat not review
                     int j = 0;
                     int l = 0;
 
                     HashMap<String, Integer> tempCheckin = new HashMap<String, Integer>();
                     ArrayList<String> finalCheckinBid = new ArrayList<String>();
-
-                   
-                        ArrayList<CheckinDetail> checkinList = new ArrayList<CheckinDetail>();
-                        //System.out.println("I am in checkin box");
-                        String[] arrayDays = {"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"};
-                        for (int i = 0; i < arrayDays.length; i++) {
-                            if (fromCheckin == arrayDays[i]) {
-                                j = i;
-                            } else if (toCheckin == arrayDays[i]) {
-                                l = i;
-                            }
+                    StringBuffer finalQueryCatCheck = new StringBuffer();
+                    ArrayList<CheckinDetail> checkinList = new ArrayList<CheckinDetail>();
+                    //System.out.println("I am in checkin box");
+                    String[] arrayDays = {"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"};
+                    for (int i = 0; i < arrayDays.length; i++) {
+                        if (fromCheckin == arrayDays[i]) {
+                            j = i;
+                        } else if (toCheckin == arrayDays[i]) {
+                            l = i;
                         }
-                        ArrayList<Integer> days = new ArrayList<Integer>();
-                        days.add(j);
-                        int temfromday = j;
-                        days.add(l);
+                    }
+                    ArrayList<Integer> days = new ArrayList<Integer>();
+                    days.add(j);
+                    int temfromday = j;
+                    days.add(l);
 
 //                         System.out.println("Input Data "+j+"  "+fromCheckinHour+"  "+toCheckin+"  "+toCheckinHour+" "+
 //                                        operationCheckin+"  "+valueCheckin);
 //               System.out.println(j);         
-                        int difference = CheckForDay(fromCheckin, toCheckin);
-                        if (difference > 0) {
-                            for (int k = 0; k < difference; k++) {
-                                j = j + 1;
-                                if (j == 7) {
-                                    j = 0;
-                                }
-                                days.add(j);
-
+                    int difference = CheckForDay(fromCheckin, toCheckin);
+                    if (difference > 0) {
+                        for (int k = 0; k < difference; k++) {
+                            j = j + 1;
+                            if (j == 7) {
+                                j = 0;
                             }
+                            days.add(j);
+
                         }
+                    }
 //                        for(int q:days){
 //                        System.out.println(q);
 //                        }
-                       
-                        List<DBObject> categoryIdList = new ArrayList<DBObject>();
-                         for (String t : finalCat) {
+
+                    List<DBObject> categoryIdList = new ArrayList<DBObject>();
+                    for (String t : finalCat) {
                         BasicDBObject whereQueryBusiness = new BasicDBObject();
                         BasicDBObject fieldsBusiness = new BasicDBObject();
                         fieldsBusiness.put("business_id", 1);
                         whereQueryBusiness.put("categories", t);
                         DBCursor cursorForBusiness = collBusiness.find(whereQueryBusiness, fieldsBusiness);
+                        finalQueryCatCheck.append(whereQueryBusiness);
                         while (cursorForBusiness.hasNext()) {
                             int i = 1;
                             categoryIdList.add(cursorForBusiness.next());
                             i++;
                         }
-                          }//for FINALCAT
-                          List<DBObject> checkinCategoryIdList = new ArrayList<DBObject>();
-                        for (DBObject s : categoryIdList) {
-                            //System.out.println(s.get("business_id"));
-                            BasicDBObject whereQueryCheckin = new BasicDBObject();
-                            whereQueryCheckin.put("business_id", s.get("business_id"));
-                            DBCursor cursorForCheckin = collCheckin.find(whereQueryCheckin);
-                            while (cursorForCheckin.hasNext()) {
-                                int i = 1;
-                                checkinCategoryIdList.add(cursorForCheckin.next());
-                                i++;
-                            }
-                              }//for DBObject s:categoryIdList
-                            for (DBObject u : checkinCategoryIdList) {
+                    }//for FINALCAT
+                    List<DBObject> checkinCategoryIdList = new ArrayList<DBObject>();
+                    for (DBObject s : categoryIdList) {
+                        //System.out.println(s.get("business_id"));
+                        BasicDBObject whereQueryCheckin = new BasicDBObject();
+                        whereQueryCheckin.put("business_id", s.get("business_id"));
+                        DBCursor cursorForCheckin = collCheckin.find(whereQueryCheckin);
+                        while (cursorForCheckin.hasNext()) {
+                            int i = 1;
+                            checkinCategoryIdList.add(cursorForCheckin.next());
+                            i++;
+                        }
+                    }//for DBObject s:categoryIdList
+                    for (DBObject u : checkinCategoryIdList) {
 //                                System.out.println(s.get("business_id"));    
 //                                System.out.println(u.get("checkin_info").toString());
-                               
-                                String full = u.get("checkin_info").toString();
-                                String a = full.replaceAll("[{}]", "");
-                                String[] b = a.split(",");
-                                for (int x = 0; x < b.length; x++) {
-                                     CheckinDetail objCheckin = new CheckinDetail();
-                                    String[] c = b[x].split(":");
-                                    
-                                        String d = c[0].replaceAll("[\"]", "");
-                                        String[] e = d.split("-");
-                                        objCheckin.b_Id = u.get("business_id").toString();
+
+                        String full = u.get("checkin_info").toString();
+                        String a = full.replaceAll("[{}]", "");
+                        String[] b = a.split(",");
+                        for (int x = 0; x < b.length; x++) {
+                            CheckinDetail objCheckin = new CheckinDetail();
+                            String[] c = b[x].split(":");
+
+                            String d = c[0].replaceAll("[\"]", "");
+                            String[] e = d.split("-");
+                            objCheckin.b_Id = u.get("business_id").toString();
 //                                        System.out.println(u.get("business_id").toString());
 //                                        System.out.println(e[0]);//from time
-                                        objCheckin.fromTime = Integer.parseInt(e[0].replaceAll("\\s+", ""));
+                            objCheckin.fromTime = Integer.parseInt(e[0].replaceAll("\\s+", ""));
 //                                        System.out.println(e[1]);//day
-                                        objCheckin.checkinDay = Integer.parseInt(e[1].replaceAll("\\s+", ""));
+                            objCheckin.checkinDay = Integer.parseInt(e[1].replaceAll("\\s+", ""));
 //                                        System.out.println(c[1]);//value
-                                        objCheckin.CountValue = Integer.parseInt(c[1].replaceAll("\\s+", ""));;
-                                        checkinList.add(objCheckin);
-                                        //System.out.println(checkinList.size());
-                                }
-                            }
+                            objCheckin.CountValue = Integer.parseInt(c[1].replaceAll("\\s+", ""));;
+                            checkinList.add(objCheckin);
+                            //System.out.println(checkinList.size());
+                        }
+                    }
 
-                      
+                    for (CheckinDetail e : checkinList) {
 
-                        for (CheckinDetail e : checkinList) {
+                        for (int f : days) {
 
-                            for (int f : days) {
-                                
-                                if ( (f == temfromday && temfromday == e.checkinDay && Integer.parseInt(fromCheckinHour) <= e.fromTime)
-                                        || (f == l && l == e.checkinDay && Integer.parseInt(toCheckinHour) >= e.fromTime) 
-                                        || (f == e.checkinDay && f != temfromday && f != l)) {
+                            if ((f == temfromday && temfromday == e.checkinDay && Integer.parseInt(fromCheckinHour) <= e.fromTime)
+                                    || (f == l && l == e.checkinDay && Integer.parseInt(toCheckinHour) >= e.fromTime)
+                                    || (f == e.checkinDay && f != temfromday && f != l)) {
 //                                    System.out.println(e.b_Id);
 //                                    System.out.println(e.CountValue);
-                                    if (tempCheckin.containsKey(e.b_Id)) {
-                                        tempCheckin.put(e.b_Id, tempCheckin.get(e.b_Id) + e.CountValue);
-                                    } else {
-                                            tempCheckin.put(e.b_Id, e.CountValue);
-                                    }
-                                    
+                                if (tempCheckin.containsKey(e.b_Id)) {
+                                    tempCheckin.put(e.b_Id, tempCheckin.get(e.b_Id) + e.CountValue);
+                                } else {
+                                    tempCheckin.put(e.b_Id, e.CountValue);
                                 }
+
                             }
                         }
-
-                  
+                    }
 
                     Iterator itr = tempCheckin.entrySet().iterator();
                     while (itr.hasNext()) {
                         Map.Entry entry = (Map.Entry) itr.next();
-                        if((operationCheckin.contains("="))){
-                            if(entry.getValue()== valueCheckin){
-                            finalCheckinBid.add(entry.getKey().toString());
+                        if ((operationCheckin.contains("="))) {
+                            if (entry.getValue() == valueCheckin) {
+                                finalCheckinBid.add(entry.getKey().toString());
                             }
                         }
-                        if((operationCheckin.contains("<"))){
-                            if(Integer.parseInt(entry.getValue().toString()) < Integer.parseInt(valueCheckin)){
-                            finalCheckinBid.add(entry.getKey().toString());
-                            //System.out.println("in <");
+                        if ((operationCheckin.contains("<"))) {
+                            if (Integer.parseInt(entry.getValue().toString()) < Integer.parseInt(valueCheckin)) {
+                                finalCheckinBid.add(entry.getKey().toString());
+                                //System.out.println("in <");
                             }
                         }
-                        if((operationCheckin.contains(">"))){
-                            if(Integer.parseInt(entry.getValue().toString()) > Integer.parseInt(valueCheckin)){
-                            finalCheckinBid.add(entry.getKey().toString());
-                            //System.out.println("in >");
+                        if ((operationCheckin.contains(">"))) {
+                            if (Integer.parseInt(entry.getValue().toString()) > Integer.parseInt(valueCheckin)) {
+                                finalCheckinBid.add(entry.getKey().toString());
+                                //System.out.println("in >");
                             }
                         }
-                        
+
 //                            
-                        
                     }
+                    finalQueryCatCheck.append("Stage{name='$match', value=Or Filter{filters=[Operator Filter{fieldName='checkin_info.2-3', operator='$exists', value=BsonBoolean{value=true}}, Operator Filter{fieldName='checkin_info.2-4', operator='$exists', value=BsonBoolean{value=true}}]}}\n"
+                            + "Document{{$group=Document{{_id=$business_id, total1=Document{{$sum=$checkin_info.2-4}}, total2=Document{{$sum=$checkin_info.2-3}}}}}}\n"
+                            + "Stage{name='$match', value=Operator Filter{fieldName='totalCheckins', operator='$gt', value=4}}");
+                    if (!Address.isEmpty() && !proximity.isEmpty()) {
+
+                        if (Address.contains("3799 S Las Vegas Blvd Eastside Las Vegas, NV 89119")) {
+                            longitude = -115.16768879999999;
+                            latitude = 36.103017899999998;
+                        }
+
+                        if (Address.equalsIgnoreCase("6002 S Durango Dr Ste 100 Spring Valley Las Vegas, NV 89113")) {
+                            longitude = -115.27906539999999;
+                            latitude = 36.079256100000002;
+                        }
+
+                        if (Address.equalsIgnoreCase("1801 E Baseline Rd, #101 Ste 101 Tempe, AZ 85283")) {
+                            longitude = -111.90860979259;
+                            latitude = 33.377052104372098;
+                        }
+
+                        if (Address.equalsIgnoreCase("1033 S Park St Bay Creek Madison, WI 53715")) {
+                            longitude = -89.397478300000003;
+                            latitude = 43.055539400000001;
+                        }
+
+                        if (Address.equalsIgnoreCase("University Center II Lot Phoenix, AZ 85008")) {
+                            longitude = -112.02540759999999;
+                            latitude = 33.451857400000002;
+                        }
+
+                        List<String> pointInterest = new ArrayList<String>();
+                        BasicDBList geoCoord = new BasicDBList();
+
+                        geoCoord.add(longitude);
+                        geoCoord.add(latitude);
+
+                        BasicDBList geoParams = new BasicDBList();
+                        geoParams.add(geoCoord);
+                        geoParams.add(Integer.parseInt(proximity) / 1018.59);
+
+                        BasicDBObject query = new BasicDBObject("loc",
+                                new BasicDBObject("$geoWithin",
+                                        new BasicDBObject("$center", geoParams)
+                                )
+                        );
+
+                        DBCursor cursorForBusiness = collBusiness.find(query);
+                        finalQueryCatCheck.append(query);
+                        while (cursorForBusiness.hasNext()) {
+                            pointInterest.add(cursorForBusiness.next().get("business_id").toString());
+
+                        }
+//                System.out.println(pointInterest.size());
+//                System.out.println(reviewCategoryIdList.size());
+                        finalCheckinBid.retainAll(pointInterest);
+//                System.out.println(reviewCategoryIdList.size());
+                    }
+
+                    resultTable.setModel(dtm);
+                    queryLabel.setText("<html><p>" + finalQueryCatCheck.toString() + "</p></html>");
+                    String header[] = new String[]{"B_ID","Business", "City", "State",
+                        "Stars"};
+
+                    // add header in table model     
+                    dtm.setColumnIdentifiers(header);
                     List<DBObject> outputMyList = new ArrayList<DBObject>();
                     BasicDBObject whereQuery = new BasicDBObject();
                     for (String fianlBid2 : finalCheckinBid) {
@@ -2007,20 +2141,15 @@ public class HW4 extends javax.swing.JFrame {
                             i++;
                         }
                     }
-                    resultTable.setModel(dtm);
 
-                    String header[] = new String[]{"Business", "City", "State",
-                        "Stars"};
-
-                    // add header in table model     
-                    dtm.setColumnIdentifiers(header);
                     for (DBObject temp : outputMyList) {
                         //System.out.println("Business Name : " + temp.get("name") + " Category :  " + temp.get("categories"));
                         Object[] row = new Object[5];
-                        row[0] = temp.get("name");
-                        row[1] = temp.get("city");
-                        row[2] = temp.get("state");
-                        row[3] = temp.get("stars");
+                        row[0] = temp.get("business_id");
+                        row[1] = temp.get("name");
+                        row[2] = temp.get("city");
+                        row[3] = temp.get("state");
+                        row[4] = temp.get("stars");
 
                         dtm.addRow(row);
                     }
@@ -2028,10 +2157,11 @@ public class HW4 extends javax.swing.JFrame {
                 }//else with no review
             }//if for entire checkin check
             else {//only cat
-                
+
 /////////////////////////////////////////Cat N Review/////////////////////////////////////////////////////////////////////
                 if (!fromReview.isEmpty() && !toReview.isEmpty() && !operationStar.isEmpty() && !valueStar.isEmpty()
                         && !operationVote.isEmpty() && !valueVote.isEmpty()) {
+                    StringBuffer finalQueryCatReview = new StringBuffer();
                     DateFormat format = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.ENGLISH);
                     String fromDate1 = fromReview;
                     String fromdate = fromDate1 + "T00:00:00Z";
@@ -2042,344 +2172,287 @@ public class HW4 extends javax.swing.JFrame {
                     int voteValue = Integer.parseInt(valueVote);
                     DB dbReview = mongoClient.getDB("review");
                     DBCollection collReview = dbReview.getCollection("review");
-                    
+
                     //abhi tak ki bid is in finalCheckinBid
 //                    for(String a :finalCheckinBid){
 //                    System.out.println(a);
 //                    }
-                    try{
-                    List<Object> finalCatBid = new ArrayList<Object>();
-                     List<Object> reviewCategoryIdList = new ArrayList<Object>();
-                for (String a : finalCat) {
-                    
-                    BasicDBObject whereQueryBusinessReview = new BasicDBObject();
-                    //System.out.println(a);
-                    whereQueryBusinessReview.put("categories", a);
-                    DBCursor cursor = collBusiness.find(whereQueryBusinessReview);
-                    while (cursor.hasNext()) {
-                        int i = 1;
-                        //System.out.println(cursor.next());
-                        finalCatBid.add(cursor.next().get("business_id"));
-                        i++;
-                    }}
-                            DBObject match = new BasicDBObject("$match", 
+                    try {
+                        List<Object> finalCatBid = new ArrayList<Object>();
+                        List<Object> reviewCategoryIdList = new ArrayList<Object>();
+                        for (String a : finalCat) {
+
+                            BasicDBObject whereQueryBusinessReview = new BasicDBObject();
+                            //System.out.println(a);
+                            whereQueryBusinessReview.put("categories", a);
+                            DBCursor cursor = collBusiness.find(whereQueryBusinessReview);
+                            finalQueryCatReview.append(whereQueryBusinessReview);
+                            while (cursor.hasNext()) {
+                                int i = 1;
+                                //System.out.println(cursor.next());
+                                finalCatBid.add(cursor.next().get("business_id"));
+                                i++;
+                            }
+                        }
+                        DBObject match = new BasicDBObject("$match",
                                 new BasicDBObject("date",
                                         new BasicDBObject("$gt", format.parse(fromdate)).append("$lt", format.parse(todate))));
-             
-                            DBObject groupFields = new BasicDBObject("_id", "$business_id");
-                            groupFields.put("total1", new BasicDBObject("$sum", "$votes.funny"));
-                            groupFields.put("total2", new BasicDBObject("$sum", "$votes.useful"));
-                            groupFields.put("total3", new BasicDBObject("$sum", "$votes.cool"));
-                            groupFields.put("totalStars", new BasicDBObject("$sum", "$stars"));
-                            DBObject group = new BasicDBObject("$group", groupFields);
 
-                            DBObject fields = new BasicDBObject("_id", 1);
-                            BasicDBList addFields = new BasicDBList();
-                            addFields.add("$total1");
-                            addFields.add("$total2");
-                            addFields.add("$total3");
-                            fields.put("totalVotes", new BasicDBObject("$sum", addFields));
-                            fields.put("totalStars", 1);
-                            DBObject project = new BasicDBObject("$project", fields);
-                            BasicDBObject votes = null;
-                            BasicDBObject stars = null;
-                            if(operationStar.equals(">")){
-                            stars = new BasicDBObject("totalStars",new BasicDBObject("$gt",starValue));
-                            }
-                            if(operationStar.equals("<")){
-                            stars = new BasicDBObject("totalStars",new BasicDBObject("$lt",starValue));
-                            }
-                            if(operationStar.equals("=")){
-                            stars = new BasicDBObject("totalStars",new BasicDBObject("$eq",starValue));
-                            }
-                            if(operationVote.equals(">")){
-                            votes =new BasicDBObject("totalVotes",new BasicDBObject("$gt",voteValue));
-                            }
-                            if(operationVote.equals("<")){
-                            votes =new BasicDBObject("totalVotes",new BasicDBObject("$lt",voteValue));
-                            }
-                            if(operationVote.equals("=")){
-                            votes =new BasicDBObject("totalVotes",new BasicDBObject("$eq",voteValue));
-                            }
-                            List<BasicDBObject> list1 = new ArrayList<BasicDBObject>();
-                            list1.add(new BasicDBObject(votes));
-                            list1.add(new BasicDBObject(stars));
-                            DBObject votesnStars = new BasicDBObject("$and",list1 );
-                            DBObject match2 = new BasicDBObject("$match",votesnStars);
+                        DBObject groupFields = new BasicDBObject("_id", "$business_id");
+                        groupFields.put("total1", new BasicDBObject("$sum", "$votes.funny"));
+                        groupFields.put("total2", new BasicDBObject("$sum", "$votes.useful"));
+                        groupFields.put("total3", new BasicDBObject("$sum", "$votes.cool"));
+                        groupFields.put("totalStars", new BasicDBObject("$sum", "$stars"));
+                        DBObject group = new BasicDBObject("$group", groupFields);
 
-                            AggregationOutput cursorForReview = collReview.aggregate(match,group,project,match2);
-                            Iterable<DBObject> list = cursorForReview.results();
-                            Iterator<DBObject> resultSet1=list.iterator();
-                            while (resultSet1.hasNext()){  
+                        DBObject fields = new BasicDBObject("_id", 1);
+                        BasicDBList addFields = new BasicDBList();
+                        addFields.add("$total1");
+                        addFields.add("$total2");
+                        addFields.add("$total3");
+                        fields.put("totalVotes", new BasicDBObject("$sum", addFields));
+                        fields.put("totalStars", 1);
+                        DBObject project = new BasicDBObject("$project", fields);
+                        BasicDBObject votes = null;
+                        BasicDBObject stars = null;
+                        if (operationStar.equals(">")) {
+                            stars = new BasicDBObject("totalStars", new BasicDBObject("$gt", starValue));
+                        }
+                        if (operationStar.equals("<")) {
+                            stars = new BasicDBObject("totalStars", new BasicDBObject("$lt", starValue));
+                        }
+                        if (operationStar.equals("=")) {
+                            stars = new BasicDBObject("totalStars", new BasicDBObject("$eq", starValue));
+                        }
+                        if (operationVote.equals(">")) {
+                            votes = new BasicDBObject("totalVotes", new BasicDBObject("$gt", voteValue));
+                        }
+                        if (operationVote.equals("<")) {
+                            votes = new BasicDBObject("totalVotes", new BasicDBObject("$lt", voteValue));
+                        }
+                        if (operationVote.equals("=")) {
+                            votes = new BasicDBObject("totalVotes", new BasicDBObject("$eq", voteValue));
+                        }
+                        List<BasicDBObject> list1 = new ArrayList<BasicDBObject>();
+                        list1.add(new BasicDBObject(votes));
+                        list1.add(new BasicDBObject(stars));
+                        DBObject votesnStars = new BasicDBObject("$and", list1);
+                        DBObject match2 = new BasicDBObject("$match", votesnStars);
+
+                        AggregationOutput cursorForReview = collReview.aggregate(match, group, project, match2);
+                        String query33 = match + "\n" + group + "\n" + project + "\n" + match2;
+                        finalQueryCatReview.append(query33);
+                        Iterable<DBObject> list = cursorForReview.results();
+                        Iterator<DBObject> resultSet1 = list.iterator();
+                        while (resultSet1.hasNext()) {
 //                            System.out.println(resultSet1.next().get("_id"));
                             reviewCategoryIdList.add(resultSet1.next().get("_id"));
-                        }  
-                            //System.out.println(reviewCategoryIdList.size());
-                            //System.out.println(finalCatBid.size());
-                            reviewCategoryIdList.retainAll(finalCatBid);
-                            //System.out.println(reviewCategoryIdList.size());
+                        }
+                        //System.out.println(reviewCategoryIdList.size());
+                        //System.out.println(finalCatBid.size());
+                        reviewCategoryIdList.retainAll(finalCatBid);
+                        //System.out.println(reviewCategoryIdList.size());
 //                        for (Object s : reviewCategoryIdList) { 
 //                        System.out.println(s.toString());
 //                        }
-       
-                    
-                    List<DBObject> outputMyList = new ArrayList<DBObject>();
-                    for (Object fianlBid2 : reviewCategoryIdList) {
-                    BasicDBObject whereQuery = new BasicDBObject();
+                        if (!Address.isEmpty() && !proximity.isEmpty()) {
+
+                            if (Address.contains("3799 S Las Vegas Blvd Eastside Las Vegas, NV 89119")) {
+                                longitude = -115.16768879999999;
+                                latitude = 36.103017899999998;
+                            }
+
+                            if (Address.equalsIgnoreCase("6002 S Durango Dr Ste 100 Spring Valley Las Vegas, NV 89113")) {
+                                longitude = -115.27906539999999;
+                                latitude = 36.079256100000002;
+                            }
+
+                            if (Address.equalsIgnoreCase("1801 E Baseline Rd, #101 Ste 101 Tempe, AZ 85283")) {
+                                longitude = -111.90860979259;
+                                latitude = 33.377052104372098;
+                            }
+
+                            if (Address.equalsIgnoreCase("1033 S Park St Bay Creek Madison, WI 53715")) {
+                                longitude = -89.397478300000003;
+                                latitude = 43.055539400000001;
+                            }
+
+                            if (Address.equalsIgnoreCase("University Center II Lot Phoenix, AZ 85008")) {
+                                longitude = -112.02540759999999;
+                                latitude = 33.451857400000002;
+                            }
+
+                            List<String> pointInterest = new ArrayList<String>();
+                            BasicDBList geoCoord = new BasicDBList();
+
+                            geoCoord.add(longitude);
+                            geoCoord.add(latitude);
+
+                            BasicDBList geoParams = new BasicDBList();
+                            geoParams.add(geoCoord);
+                            geoParams.add(Integer.parseInt(proximity) / 1018.59);
+
+                            BasicDBObject query = new BasicDBObject("loc",
+                                    new BasicDBObject("$geoWithin",
+                                            new BasicDBObject("$center", geoParams)
+                                    )
+                            );
+
+                            DBCursor cursorForBusiness = collBusiness.find(query);
+                            finalQueryCatReview.append(query);
+                            while (cursorForBusiness.hasNext()) {
+                                pointInterest.add(cursorForBusiness.next().get("business_id").toString());
+
+                            }
+//                System.out.println(pointInterest.size());
+//                System.out.println(reviewCategoryIdList.size());
+                            reviewCategoryIdList.retainAll(pointInterest);
+//                System.out.println(reviewCategoryIdList.size());
+                        }
+                        queryLabel.setText("<html><p>" + finalQueryCatReview.toString() + "</p></html>");
+                        resultTable.setModel(dtm);
+
+                        String header[] = new String[]{"B_ID","Business", "City", "State",
+                            "Stars"};
+
+                        // add header in table model     
+                        dtm.setColumnIdentifiers(header);
+                        List<DBObject> outputMyList = new ArrayList<DBObject>();
+                        for (Object fianlBid2 : reviewCategoryIdList) {
+                            BasicDBObject whereQuery = new BasicDBObject();
 
 //                        System.out.println(fianlBid2);
-                        whereQuery.put("business_id", fianlBid2.toString());
-                        DBCursor cursor = collBusiness.find(whereQuery);
-                        while (cursor.hasNext()) {
-                            int i = 1;
-                            //System.out.println(cursor.next());
-                            outputMyList.add(cursor.next());
-                            i++;
+                            whereQuery.put("business_id", fianlBid2.toString());
+                            DBCursor cursor = collBusiness.find(whereQuery);
+                            while (cursor.hasNext()) {
+                                //System.out.println(cursor.next());
+                                outputMyList.add(cursor.next());
+                            }
                         }
+
+                        for (DBObject temp : outputMyList) {
+                            //System.out.println("Business Name : " + temp.get("name") + " Category :  " + temp.get("categories"));
+                            Object[] row = new Object[5];
+                            row[0] = temp.get("business_id");
+                            row[1] = temp.get("name");
+                            row[2] = temp.get("city");
+                            row[3] = temp.get("state");
+                            row[4] = temp.get("stars");
+
+                            dtm.addRow(row);
+                        }
+                    } catch (Exception e) {
+
                     }
+                } //////////////////////////////////////Only Category ////////////////////////////////////////////
+                else {
                     resultTable.setModel(dtm);
-
-                    String header[] = new String[]{"Business", "City", "State",
-                        "Stars"};
-
-                    // add header in table model     
-                    dtm.setColumnIdentifiers(header);
-                    for (DBObject temp : outputMyList) {
-                        //System.out.println("Business Name : " + temp.get("name") + " Category :  " + temp.get("categories"));
-                        Object[] row = new Object[5];
-                        row[0] = temp.get("name");
-                        row[1] = temp.get("city");
-                        row[2] = temp.get("state");
-                        row[3] = temp.get("stars");
-
-                        dtm.addRow(row);
-                    }
-                     }
-        catch(Exception e){
-        
-        }
-                }//////////////////////////////////////////////////////////////////////////////////
-                else{
-                    List<DBObject> testMyList = new ArrayList<DBObject>();
-                for (String a : finalCat) {
-                    
-                    BasicDBObject whereQuery = new BasicDBObject();
-                    //System.out.println(a);
-                    whereQuery.put("categories", a);
-                    DBCursor cursor = collBusiness.find(whereQuery);
-                    while (cursor.hasNext()) {
-                        int i = 1;
-                        //System.out.println(cursor.next());
-                        testMyList.add(cursor.next());
-                        i++;
-                    }
-                    resultTable.setModel(dtm);
-                    String header[] = new String[]{"Business", "City", "State",
+                    String header[] = new String[]{"B_ID","Business", "City", "State",
                         "Stars", "Category"};
                     // add header in table model     
                     dtm.setColumnIdentifiers(header);
-                    for (DBObject temp : testMyList) {
-                        //System.out.println("Business Name : " + temp.get("name") + " Category :  " + temp.get("categories"));
-                        Object[] row = new Object[5];
-                        row[0] = temp.get("name");
-                        row[1] = temp.get("city");
-                        row[2] = temp.get("state");
-                        row[3] = temp.get("stars");
-                        row[4] = a;
+                    StringBuffer catOnly = new StringBuffer();
+                    if (!Address.isEmpty() && !proximity.isEmpty() && finalCat.size() > 0) {
+                        if (Address.contains("3799 S Las Vegas Blvd Eastside Las Vegas, NV 89119")) {
+                            longitude = -115.16768879999999;
+                            latitude = 36.103017899999998;
+                        }
 
-                        dtm.addRow(row);
+                        if (Address.equalsIgnoreCase("6002 S Durango Dr Ste 100 Spring Valley Las Vegas, NV 89113")) {
+                            longitude = -115.27906539999999;
+                            latitude = 36.079256100000002;
+                        }
+
+                        if (Address.equalsIgnoreCase("1801 E Baseline Rd, #101 Ste 101 Tempe, AZ 85283")) {
+                            longitude = -111.90860979259;
+                            latitude = 33.377052104372098;
+                        }
+
+                        if (Address.equalsIgnoreCase("1033 S Park St Bay Creek Madison, WI 53715")) {
+                            longitude = -89.397478300000003;
+                            latitude = 43.055539400000001;
+                        }
+
+                        if (Address.equalsIgnoreCase("University Center II Lot Phoenix, AZ 85008")) {
+                            longitude = -112.02540759999999;
+                            latitude = 33.451857400000002;
+                        }
+                        //BasicDBList category = new BasicDBList();
+                        for (String a : finalCat) {
+
+                            BasicDBObject andQuery = new BasicDBObject();
+                            List<BasicDBObject> obj = new ArrayList<BasicDBObject>();
+
+                            List<DBObject> pointInterest = new ArrayList<DBObject>();
+                            BasicDBList geoCoord = new BasicDBList();
+
+                            geoCoord.add(longitude);
+                            geoCoord.add(latitude);
+
+                            BasicDBList geoParams = new BasicDBList();
+                            geoParams.add(geoCoord);
+                            geoParams.add(Integer.parseInt(proximity) / 1018.59);
+
+                            BasicDBObject query = new BasicDBObject("loc",
+                                    new BasicDBObject("$geoWithin",
+                                            new BasicDBObject("$center", geoParams)
+                                    )
+                            );
+                            obj.add(query);
+                            obj.add(new BasicDBObject("categories", a));
+                            andQuery.put("$and", obj);
+                            System.out.println(andQuery);
+                            DBCursor cursorForBusiness = collBusiness.find(andQuery);
+                            catOnly.append(andQuery);
+                            while (cursorForBusiness.hasNext()) {
+                                pointInterest.add(cursorForBusiness.next());
+
+                            }
+                            for (DBObject temp : pointInterest) {
+
+                                Object[] row = new Object[6];
+                                row[0] = temp.get("business_id");
+                                row[1] = temp.get("name");
+                                row[2] = temp.get("city");
+                                row[3] = temp.get("state");
+                                row[4] = temp.get("stars");
+                                row[5] = a;
+
+                                dtm.addRow(row);
+                            }
+                        }
+                    } else {
+                        List<DBObject> testMyList = new ArrayList<DBObject>();
+                        for (String a : finalCat) {
+                            BasicDBObject whereQuery = new BasicDBObject();
+                            //System.out.println(a);
+                            whereQuery.put("categories", a);
+                            DBCursor cursor = collBusiness.find(whereQuery);
+                            catOnly.append(whereQuery);
+                            while (cursor.hasNext()) {
+                                testMyList.add(cursor.next());
+
+                            }
+
+                            for (DBObject temp : testMyList) {
+                                //System.out.println("Business Name : " + temp.get("name") + " Category :  " + temp.get("categories"));
+                                Object[] row = new Object[6];
+                                row[0] = temp.get("business_id");
+                                row[1] = temp.get("name");
+                                row[2] = temp.get("city");
+                                row[3] = temp.get("state");
+                                row[4] = temp.get("stars");
+                                row[5] = a;
+
+                                dtm.addRow(row);
+                            }
+                        }
+
                     }
+                    queryLabel.setText("<html><p>" + catOnly.toString() + "</p></html>");
                 }
-            }
             }//else
         } //cat and subCat is selected
-//        else if (finalCat.size() > 0 && finalCat1.size() > 0) {
-//
-//            if (!fromCheckin.isEmpty() && !fromCheckinHour.isEmpty() && !toCheckin.isEmpty() && !toCheckinHour.isEmpty()
-//                    && !operationCheckin.isEmpty() && !valueCheckin.isEmpty()) {
-//
-//                if (!fromReview.isEmpty() && !toReview.isEmpty() && !operationStar.isEmpty() && !valueStar.isEmpty()
-//                        && !operationVote.isEmpty() && !valueVote.isEmpty()) {
-//
-//                    int j = 0;
-//                    for (String t : finalCat) {
-//                        for (String s : finalCat1) {
-//                            //System.out.println("I am in checkin box");
-//
-//                            String[] arrayDays = {"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"};
-//                            for (int i = 0; i < arrayDays.length; i++) {
-//                                if (fromCheckin == arrayDays[i]) {
-//                                    j = i;
-//                                }
-//                            }
-////               System.out.println(j);         
-//                            int difference = CheckForDay(fromCheckin, toCheckin);
-////                System.out.println(difference);
-//                            StringBuffer query1 = new StringBuffer(
-//                                    "SELECT DISTINCT I.name,I.CITY, I.STATE, I.STARS,C.B_CATEGORY,S.B_SUBCATEGORY \n"
-//                                    + "from b_info I,b_cat C,b_subcat S\n"
-//                                    + "where I.B_ID=C.B_ID and C.B_ID=S.B_ID and C.B_CATEGORY= ? and S.B_SUBCATEGORY= ? and C.B_ID in (  \n"
-//                                    + "SELECT b_id FROM B_CHECKIN CH WHERE \n"
-//                                    + "((CH.CHECKIN_DAY='" + fromCheckin + "' and TO_CHAR(CH.CHECKIN_TIME,'hh24.mi.ss') >='" + fromCheckinHour + "')\n"
-//                                    + "or (CH.CHECKIN_DAY='" + toCheckin + "' and TO_CHAR(CH.CHECKIN_TIME,'hh24.mi.ss') <='" + toCheckinHour + "')");
-//                            if (difference > 0) {
-//                                for (int k = 0; k < difference; k++) {
-//                                    j = j + 1;
-//                                    if (j == 7) {
-//                                        j = 0;
-//                                    }
-//                                    query1.append(" or CH.CHECKIN_DAY='" + arrayDays[j] + "'");
-//
-//                                }
-//                            }
-//
-//                            String fQuery = query1.toString()
-//                                    + ")AND CH.B_ID IN (SELECT B_ID FROM B_REVIEW WHERE ( \n"
-//                                    + "(R_DATE BETWEEN TO_DATE ('" + fromReview + "', 'mm/dd/rr') AND TO_DATE ('" + toReview + "', 'mm/dd/rr')))\n"
-//                                    + "GROUP BY B_ID HAVING SUM(STARS)" + operationStar + "'" + valueStar + "' AND SUM(VOTES)" + operationVote + "'" + valueVote + "')\n"
-//                                    + "group by b_id having sum(NUMBER_CHECKIN)" + operationCheckin + "'" + valueCheckin + "')";
-//                            queryLabel.setText("<html><p>" + fQuery.toString() + "</p></html>");
-//                            try (PreparedStatement preparedStatement = con.prepareStatement(fQuery.toString())) {
-//                                preparedStatement.setString(1, t);
-//                                preparedStatement.setString(2, s);
-//
-//                                try (ResultSet resultSet = preparedStatement.executeQuery()) {
-//                                    resultTable.setModel(dtm);
-//
-//                                    String header[] = new String[]{"Business", "City", "State",
-//                                        "Stars", "Category", "Subcategory"};
-//
-//                                    // add header in table model     
-//                                    dtm.setColumnIdentifiers(header);
-//
-//                                    while (resultSet.next()) {
-//                                        Object[] row = new Object[resultSet.getMetaData().getColumnCount()];
-//                                        for (int i = 0; i < row.length; i++) {
-//                                            row[i] = resultSet.getObject(i + 1);
-//                                        }
-//
-//                                        dtm.addRow(row);
-//
-//                                    }
-//                                }
-//
-//                            } catch (SQLException ex) {
-//                                Logger.getLogger(HW4.class.getName()).log(Level.SEVERE, null, ex);
-//                            }
-//
-//                        }
-//                    }//for cat n subcat
-//
-//                }//review if
-//                else {
-//
-//                    int j = 0;
-//                    for (String t : finalCat) {
-//                        for (String s : finalCat1) {
-//                            //System.out.println("I am in checkin box");
-//
-//                            String[] arrayDays = {"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"};
-//                            for (int i = 0; i < arrayDays.length; i++) {
-//                                if (fromCheckin == arrayDays[i]) {
-//                                    j = i;
-//                                }
-//                            }
-////               System.out.println(j);         
-//                            int difference = CheckForDay(fromCheckin, toCheckin);
-////                System.out.println(difference);
-//                            StringBuffer query1 = new StringBuffer(
-//                                    "SELECT DISTINCT I.name,I.CITY, I.STATE, I.STARS,C.B_CATEGORY,S.B_SUBCATEGORY \n"
-//                                    + "from b_info I,b_cat C,b_subcat S\n"
-//                                    + "where I.B_ID=C.B_ID and C.B_ID=S.B_ID and C.B_CATEGORY= ? and S.B_SUBCATEGORY= ? and C.B_ID in (  \n"
-//                                    + "SELECT b_id FROM B_CHECKIN CH WHERE \n"
-//                                    + "((CH.CHECKIN_DAY='" + fromCheckin + "' and TO_CHAR(CH.CHECKIN_TIME,'hh24.mi.ss') >='" + fromCheckinHour + "')\n"
-//                                    + "or (CH.CHECKIN_DAY='" + toCheckin + "' and TO_CHAR(CH.CHECKIN_TIME,'hh24.mi.ss') <='" + toCheckinHour + "')");
-//                            if (difference > 0) {
-//                                for (int k = 0; k < difference; k++) {
-//                                    j = j + 1;
-//                                    if (j == 7) {
-//                                        j = 0;
-//                                    }
-//                                    query1.append(" or CH.CHECKIN_DAY='" + arrayDays[j] + "'");
-//
-//                                }
-//                            }
-//
-//                            String fQuery = query1.toString()
-//                                    + ")group by b_id having sum(NUMBER_CHECKIN)" + operationCheckin + "'" + valueCheckin + "')";
-//                            queryLabel.setText("<html><p>" + fQuery.toString() + "</p></html>");
-//                            try (PreparedStatement preparedStatement = con.prepareStatement(fQuery.toString())) {
-//                                preparedStatement.setString(1, t);
-//                                preparedStatement.setString(2, s);
-//
-//                                try (ResultSet resultSet = preparedStatement.executeQuery()) {
-//                                    resultTable.setModel(dtm);
-//
-//                                    String header[] = new String[]{"Business", "City", "State",
-//                                        "Stars", "Category", "Subcategory"};
-//
-//                                    // add header in table model     
-//                                    dtm.setColumnIdentifiers(header);
-//
-//                                    while (resultSet.next()) {
-//                                        Object[] row = new Object[resultSet.getMetaData().getColumnCount()];
-//                                        for (int i = 0; i < row.length; i++) {
-//                                            row[i] = resultSet.getObject(i + 1);
-//                                        }
-//
-//                                        dtm.addRow(row);
-//
-//                                    }
-//                                }
-//
-//                            } catch (SQLException ex) {
-//                                Logger.getLogger(HW4.class.getName()).log(Level.SEVERE, null, ex);
-//                            }
-//
-//                        }
-//                    }//for cat n subcat
-//                }//else with no review
-//            }//if for entire checkin check
-//            else {
-//
-//                String query = "SELECT DISTINCT I.NAME,I.CITY, I.STATE, I.STARS,C.B_CATEGORY,S.B_SUBCATEGORY \n"
-//                        + "FROM B_INFO I,B_CAT C,B_SUBCAT S\n"
-//                        + "WHERE I.B_ID=C.B_ID AND C.B_ID=S.B_ID \n"
-//                        + "AND C.B_CATEGORY= ? AND S.B_SUBCATEGORY= ?";
-//
-//                //System.out.println(query.toString());
-//                for (String t : finalCat) {
-//                    for (String s : finalCat1) {
-//                        try (PreparedStatement preparedStatement = con.prepareStatement(query)) {
-//                            preparedStatement.setString(1, t);
-//                            preparedStatement.setString(2, s);
-//                            try (ResultSet resultSet = preparedStatement.executeQuery()) {
-//                                resultTable.setModel(dtm);
-//                                queryLabel.setText("<html><p>" + query + "</p></html>");
-//                                String header[] = new String[]{"Business", "City", "State",
-//                                    "Stars", "Category", "Subcategory"};
-//
-//                                // add header in table model     
-//                                dtm.setColumnIdentifiers(header);
-//
-//                                while (resultSet.next()) {
-//                                    Object[] row = new Object[resultSet.getMetaData().getColumnCount()];
-//                                    for (int i = 0; i < row.length; i++) {
-//                                        row[i] = resultSet.getObject(i + 1);
-//                                    }
-//
-//                                    dtm.addRow(row);
-//
-//                                }
-//                            }
-//                        } catch (SQLException ex) {
-//                            Logger.getLogger(HW4.class.getName()).log(Level.SEVERE, null, ex);
-//                        }
-//                    }// for subcat
-//                }//for cat
-//            }
-//        } // end sub category else if
-
 
     }//GEN-LAST:event_executeQueryButtonActionPerformed
 
@@ -2487,6 +2560,11 @@ public class HW4 extends javax.swing.JFrame {
         starsValueTextField.setEnabled(true);
         votesComboBox.setEnabled(true);
         votesValueTextField.setEnabled(true);
+        pointOfInterestComboBox.setEnabled(true);
+        proximityComboBox.setEnabled(true);
+        searchForComboBox.setEnabled(true);
+        numberOfVotesComboBox.setEnabled(false);
+        noOfVotesValueTextField.setEnabled(false);
         memberSinceDateBox.setEnabled(false);
         reviewCountComboBox.setEnabled(false);
         reviewCountValueTextField.setEnabled(false);
@@ -2500,6 +2578,8 @@ public class HW4 extends javax.swing.JFrame {
     private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton2ActionPerformed
         // user button
         finalCat.clear();
+        numberOfVotesComboBox.setEnabled(true);
+        noOfVotesValueTextField.setEnabled(true);
         memberSinceDateBox.setEnabled(true);
         reviewCountComboBox.setEnabled(true);
         reviewCountValueTextField.setEnabled(true);
@@ -2508,6 +2588,9 @@ public class HW4 extends javax.swing.JFrame {
         avgStarComboBox.setEnabled(true);
         avgStarValueTextField.setEnabled(true);
         andOrComboBox.setEnabled(true);
+        pointOfInterestComboBox.setEnabled(false);
+        proximityComboBox.setEnabled(false);
+        searchForComboBox.setEnabled(false);
         jList1.setVisible(false);
         fromComboBox.setEnabled(false);
         fromHourComboBox.setEnabled(false);
@@ -2523,29 +2606,65 @@ public class HW4 extends javax.swing.JFrame {
         votesValueTextField.setEnabled(false);
     }//GEN-LAST:event_jButton2ActionPerformed
 
-    private void fromComboBox1MouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_fromComboBox1MouseClicked
+    private void proximityComboBoxMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_proximityComboBoxMouseClicked
         // TODO add your handling code here:
-    }//GEN-LAST:event_fromComboBox1MouseClicked
+    }//GEN-LAST:event_proximityComboBoxMouseClicked
 
-    private void fromComboBox1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_fromComboBox1ActionPerformed
-        // TODO add your handling code here:
-    }//GEN-LAST:event_fromComboBox1ActionPerformed
+    private void proximityComboBoxActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_proximityComboBoxActionPerformed
+        JComboBox cb = (JComboBox) evt.getSource();
+        String a = (String) cb.getSelectedItem();
+        if (a.equalsIgnoreCase("Miles")) {
+            proximity = "";
+        } else {
+            proximity = a;
+        }
+    }//GEN-LAST:event_proximityComboBoxActionPerformed
 
-    private void fromComboBox2MouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_fromComboBox2MouseClicked
+    private void searchForComboBoxMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_searchForComboBoxMouseClicked
         // TODO add your handling code here:
-    }//GEN-LAST:event_fromComboBox2MouseClicked
+    }//GEN-LAST:event_searchForComboBoxMouseClicked
 
-    private void fromComboBox2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_fromComboBox2ActionPerformed
-        // TODO add your handling code here:
-    }//GEN-LAST:event_fromComboBox2ActionPerformed
+    private void searchForComboBoxActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_searchForComboBoxActionPerformed
+        JComboBox cb = (JComboBox) evt.getSource();
+        String a = (String) cb.getSelectedItem();
+        if (a == "Between AND OR") {
+            searchFor = "";
+        } else {
+            searchFor = a;
+        }
+    }//GEN-LAST:event_searchForComboBoxActionPerformed
 
-    private void fromComboBox3MouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_fromComboBox3MouseClicked
+    private void pointOfInterestComboBoxMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_pointOfInterestComboBoxMouseClicked
         // TODO add your handling code here:
-    }//GEN-LAST:event_fromComboBox3MouseClicked
+    }//GEN-LAST:event_pointOfInterestComboBoxMouseClicked
 
-    private void fromComboBox3ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_fromComboBox3ActionPerformed
+    private void pointOfInterestComboBoxActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_pointOfInterestComboBoxActionPerformed
+        JComboBox cb = (JComboBox) evt.getSource();
+        String a = (String) cb.getSelectedItem();
+        if (a.equalsIgnoreCase("Address")) {
+            Address = "";
+        } else {
+            Address = a;
+        }
+    }//GEN-LAST:event_pointOfInterestComboBoxActionPerformed
+
+    private void numberOfVotesComboBoxActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_numberOfVotesComboBoxActionPerformed
+        JComboBox cb = (JComboBox) evt.getSource();
+        String a = (String) cb.getSelectedItem();
+        if (a == "Select =,>,<") {
+            operNoOfVotes = "";
+        } else {
+            operNoOfVotes = a;
+        }
+    }//GEN-LAST:event_numberOfVotesComboBoxActionPerformed
+
+    private void noOfVotesValueTextFieldActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_noOfVotesValueTextFieldActionPerformed
         // TODO add your handling code here:
-    }//GEN-LAST:event_fromComboBox3ActionPerformed
+    }//GEN-LAST:event_noOfVotesValueTextFieldActionPerformed
+
+    private void noOfVotesValueTextFieldKeyTyped(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_noOfVotesValueTextFieldKeyTyped
+        // TODO add your handling code here:
+    }//GEN-LAST:event_noOfVotesValueTextFieldKeyTyped
 
     /**
      * @param args the command line arguments
@@ -2610,9 +2729,6 @@ public class HW4 extends javax.swing.JFrame {
     private javax.swing.JPanel dbCategory;
     private javax.swing.JButton executeQueryButton;
     private javax.swing.JComboBox fromComboBox;
-    private javax.swing.JComboBox fromComboBox1;
-    private javax.swing.JComboBox fromComboBox2;
-    private javax.swing.JComboBox fromComboBox3;
     private javax.swing.JComboBox fromHourComboBox;
     private javax.swing.JLabel fromLabel;
     private javax.swing.JLabel fromLabel1;
@@ -2640,13 +2756,18 @@ public class HW4 extends javax.swing.JFrame {
     private javax.swing.JLabel noCheckinLabel1;
     private javax.swing.JLabel noCheckinLabel2;
     private javax.swing.JLabel noCheckinLabel3;
+    private javax.swing.JTextField noOfVotesValueTextField;
     private javax.swing.JComboBox numberOfFriendsComboBox;
     private javax.swing.JTextField numberOfFriendsValueTextField;
+    private javax.swing.JComboBox numberOfVotesComboBox;
+    private javax.swing.JComboBox pointOfInterestComboBox;
+    private javax.swing.JComboBox proximityComboBox;
     private javax.swing.JLabel queryLabel;
     private javax.swing.JTable resultTable;
     private javax.swing.JComboBox reviewCountComboBox;
     private javax.swing.JTextField reviewCountValueTextField;
     private javax.swing.JPanel reviewPanel;
+    private javax.swing.JComboBox searchForComboBox;
     private javax.swing.JLabel starValueLabel;
     private javax.swing.JComboBox starsComboBox;
     private javax.swing.JLabel starsLabel;
@@ -2658,6 +2779,7 @@ public class HW4 extends javax.swing.JFrame {
     private javax.swing.JLabel toLabel2;
     private javax.swing.JLabel toLabel3;
     private javax.swing.JLabel toLabel4;
+    private javax.swing.JLabel toLabel5;
     private com.toedter.calendar.JDateChooser toReviewDate;
     private javax.swing.JLabel toReviewLabel;
     private javax.swing.JComboBox votesComboBox;
